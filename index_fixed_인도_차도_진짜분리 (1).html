@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>밤길 안전 귀가 서비스 Pro · 프로젝트 디자인 2</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .app { min-height: 100vh; }
+    .auth-wrap, .main-wrap {
+      width: 100%;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .auth-grid, .content-grid, .route-grid, .two-col, .three-col {
+      display: grid;
+      gap: 20px;
+    }
+    .auth-grid { grid-template-columns: 1.1fr 0.9fr; }
+    .content-grid { grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .route-grid { grid-template-columns: 1.2fr 0.8fr; }
+    .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: 1fr 1fr 1fr; }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+    .hero {
+      padding: 32px;
+      border-radius: 28px;
+      background: white;
+      border: 1px solid #e2e8f0;
+    }
+    .title-row { display: flex; align-items: center; gap: 14px; }
+    .logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+    }
+    .muted { color: #64748b; }
+    .small { font-size: 13px; }
+    .tiny { font-size: 12px; }
+    .grid-2, .grid-3, .grid-4 { display: grid; gap: 14px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .mini-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 14px;
+      background: #fff;
+    }
+    .highlight-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 22px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      font-size: 14px;
+      background: white;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 16px;
+      background: #0f172a;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.secondary {
+      background: white;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    button.ghost {
+      background: #f8fafc;
+      color: #0f172a;
+      border: 1px dashed #cbd5e1;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f1f5f9; padding: 6px; border-radius: 16px; }
+    .tabs button { background: transparent; color: #475569; }
+    .tabs button.active { background: white; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .sidebar {
+      background: white;
+      border-right: 1px solid #e2e8f0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .nav-btn {
+      width: 100%;
+      text-align: left;
+      display: block;
+      margin-bottom: 8px;
+      background: white;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+    }
+    .nav-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 18px 24px;
+      z-index: 20;
+    }
+    .main-content { padding: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .stat-title { font-size: 13px; color: #64748b; }
+    .stat-value { font-size: 28px; font-weight: bold; margin-top: 6px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+    .badge.safe { background: #ecfdf5; color: #15803d; border-color: #bbf7d0; }
+    .badge.good { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .badge.mid { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+    .badge.warn { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .alert {
+      border: 1px solid #fcd34d;
+      background: #fffbeb;
+      color: #92400e;
+      padding: 14px;
+      border-radius: 16px;
+      margin-bottom: 14px;
+    }
+    .success {
+      border: 1px solid #86efac;
+      background: #f0fdf4;
+      color: #166534;
+      padding: 14px;
+      border-radius: 16px;
+    }
+    #map { height: 460px; border-radius: 24px; overflow: hidden; }
+    .route-option {
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 14px;
+      cursor: pointer;
+      background: white;
+    }
+    .route-option.active { border-color: #0f172a; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
+    .progress {
+      width: 100%;
+      height: 10px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress > div {
+      height: 100%;
+      background: #0f172a;
+      width: 0;
+    }
+
+    .map-current-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #2563eb;
+      border: 4px solid #ffffff;
+      box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.22), 0 8px 20px rgba(15,23,42,.18);
+    }
+    .map-place-label {
+      padding: 7px 10px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      box-shadow: 0 8px 18px rgba(15,23,42,.14);
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      white-space: nowrap;
+    }
+    .map-route-badge {
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      box-shadow: 0 8px 20px rgba(15,23,42,.18);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .map-route-badge.sidewalk { color:#15803d; border-color:#15803d; }
+    .map-route-badge.foot { color:#2563eb; border-color:#2563eb; }
+    .map-route-badge.car { color:#b91c1c; border-color:#b91c1c; }
+    .remaining-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .navigation-panel {
+      margin-top: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 22px;
+      padding: 16px;
+      background: #f8fafc;
+    }
+    .navigation-panel.active {
+      background: #ecfdf5;
+      border-color: #86efac;
+    }
+    .navigation-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .navigation-instruction {
+      margin-top: 12px;
+      padding: 15px;
+      border-radius: 18px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      font-size: 15px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+    .navigation-controls { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .navigation-controls button { padding: 10px 12px; }
+    .navigation-controls button.stop { background:#b91c1c; }
+    .nav-step-list { margin-top:12px; display:grid; gap:8px; }
+    .nav-step {
+      border: 1px solid #e2e8f0;
+      border-radius: 15px;
+      padding: 10px 12px;
+      background: white;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .nav-step.current { border-color:#0f172a; color:#0f172a; font-weight:700; background:#f8fafc; }
+    .hidden { display: none !important; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .space-y > * + * { margin-top: 12px; }
+    .switch-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #e2e8f0; border-radius: 20px; }
+    .history-item { border: 1px solid #e2e8f0; border-radius: 22px; padding: 16px; }
+    .favorite-btn {
+      text-align: left;
+      border: 1px solid #e2e8f0;
+      background: white;
+      color: #0f172a;
+      padding: 14px;
+      border-radius: 18px;
+      width: 100%;
+    }
+    .checklist-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+    .guardian-panel {
+      border: 1px solid #cbd5e1;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 24px;
+      padding: 18px;
+    }
+    .pill-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .status-strip {
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .status-cell {
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 12px;
+      background: #fff;
+    }
+    .place-field { position: relative; }
+    .suggestion-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .suggestion-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 22px;
+      background: #ffffff;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+      min-height: 150px;
+    }
+    .suggestion-card-header {
+      padding: 14px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .suggestion-card-header strong { font-size: 16px; }
+    .suggestion-card-header span { font-size: 12px; color: #64748b; }
+    .place-suggestions {
+      background: white;
+      display: none;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .place-suggestions.open { display: block; }
+    .place-suggestion-item {
+      width: 100%;
+      text-align: left;
+      background: white;
+      color: #0f172a;
+      border: 0;
+      border-bottom: 1px solid #e2e8f0;
+      border-radius: 0;
+      padding: 17px 18px;
+      display: block;
+      cursor: pointer;
+    }
+    .place-suggestion-item:hover,
+    .place-suggestion-item.active { background: #f1f5f9; }
+    .place-suggestion-name { font-weight: 800; font-size: 17px; }
+    .place-suggestion-address { margin-top: 7px; color: #475569; font-size: 14px; line-height: 1.55; }
+    .place-suggestion-empty { padding: 22px 18px; color: #64748b; font-size: 14px; line-height:1.6; }
+
+    .ai-chatbot-fab {
+      position: fixed;
+      right: 26px;
+      bottom: 26px;
+      width: 68px;
+      height: 68px;
+      border-radius: 999px;
+      background: #0f172a;
+      color: white;
+      border: none;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      z-index: 1000;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ai-chatbot-window {
+      position: fixed;
+      right: 26px;
+      bottom: 108px;
+      width: min(360px, calc(100vw - 32px));
+      height: 540px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      z-index: 999;
+      display: none;
+      overflow: hidden;
+    }
+    .ai-chatbot-window.open { display: flex; flex-direction: column; }
+    .ai-chatbot-header {
+      padding: 16px;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ai-chatbot-header button {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 999px;
+    }
+    .ai-chatbot-messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      background: #f8fafc;
+    }
+    .ai-message, .user-message {
+      max-width: 82%;
+      padding: 11px 13px;
+      border-radius: 16px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .ai-message {
+      background: white;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-top-left-radius: 6px;
+    }
+    .user-message {
+      margin-left: auto;
+      background: #0f172a;
+      color: white;
+      border-top-right-radius: 6px;
+    }
+    .ai-chatbot-quick {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 14px 12px;
+      background: #f8fafc;
+    }
+    .ai-chatbot-quick button {
+      background: white;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .ai-chatbot-input {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #e2e8f0;
+      background: white;
+    }
+    .ai-chatbot-input input {
+      border-radius: 999px;
+    }
+    .ai-chatbot-input button {
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .ai-chatgpt-settings {
+      padding: 10px 14px;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+    }
+    .ai-chatgpt-settings summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 700;
+    }
+    .ai-chatgpt-settings .settings-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .ai-chatgpt-settings input {
+      padding: 9px 11px;
+      font-size: 12px;
+      border-radius: 12px;
+    }
+    .ai-chatgpt-settings button {
+      padding: 9px 11px;
+      font-size: 12px;
+      border-radius: 12px;
+    }
+    .ai-chatgpt-status {
+      margin-top: 7px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+
+    .ai-feature-board {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .ai-feature-board.compact { margin-top: 12px; }
+    .ai-feature-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 22px;
+      padding: 18px 20px;
+      background: #ffffff;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+    .ai-feature-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      background: #0f172a;
+    }
+    .ai-feature-card.active-ai {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border-color: #94a3b8;
+    }
+    .ai-feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      z-index: 1;
+    }
+    .ai-feature-title { font-size: 18px; font-weight: 900; }
+    .ai-feature-desc { margin-top: 7px; color: #475569; font-size: 14px; line-height: 1.6; }
+    .ai-feature-detail { margin-top: 8px; color: #64748b; font-size: 12px; line-height: 1.45; }
+    .ai-feature-actions { display: flex; flex-direction: column; gap: 8px; min-width: 138px; z-index: 1; }
+    .ai-feature-actions button { padding: 10px 12px; font-size: 12px; }
+    .ai-panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+    .ai-insight-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    .ai-insight-value {
+      font-size: 30px;
+      font-weight: 900;
+      margin: 10px 0 4px;
+    }
+    .ai-route-panel {
+      margin-top: 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      border-radius: 20px;
+      padding: 15px;
+      color: #1e3a8a;
+    }
+    .ai-signal-list { display: grid; gap: 10px; margin-top: 12px; }
+    .ai-signal-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .mode-confirmation {
+      margin-top: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      padding: 14px 16px;
+      background: #ffffff;
+      display: grid;
+      gap: 10px;
+    }
+    .mode-confirmation-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .mode-title { font-size: 16px; font-weight: 900; }
+    .mode-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      background: #f8fafc;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mode-warning {
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 900px) {
+      .ai-feature-card { grid-template-columns: 1fr; }
+      .ai-feature-actions { min-width: 0; }
+      .ai-panel-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 900px) {
+      .suggestion-board { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .ai-chatbot-fab { right: 18px; bottom: 18px; width: 60px; height: 60px; }
+      .ai-chatbot-window { right: 16px; bottom: 88px; height: 440px; }
+    }
+
+    @media (max-width: 1100px) {
+      .auth-grid, .content-grid, .route-grid, .two-col, .three-col { grid-template-columns: 1fr; }
+      .stats, .grid-4, .grid-3, .grid-2, .status-strip { grid-template-columns: 1fr; }
+      .sidebar { min-height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app"></div>
+
+  <script>
+    window.KAKAO_JAVASCRIPT_KEY = '3a5b42f53f224a2ed0958cf9e2a381d3';
+  </script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3a5b42f53f224a2ed0958cf9e2a381d3&libraries=services"></script>
+  <script>
+    const USERS_KEY = 'night_safety_users_v2';
+    const SESSION_KEY = 'night_safety_session_v2';
+    const CONTACTS_KEY = 'night_safety_contacts_v2';
+    const HISTORY_KEY = 'night_safety_history_v2';
+    const SHARE_KEY = 'night_safety_sharing_v2';
+    const FAVORITES_KEY = 'night_safety_favorites_v2';
+    const CHATGPT_ENDPOINT_KEY = 'night_safety_chatgpt_endpoint_v1';
+    const CHATGPT_ENABLED_KEY = 'night_safety_chatgpt_enabled_v1';
+
+    const defaultUsers = [{ id:'demo-user', name:'송우석', email:'demo@nightsafe.app', password:'1234', role:'PM' }];
+    const defaultContacts = [
+      { id:'c1', name:'홍길동', relation:'보호자', phone:'010-1234-5678' },
+      { id:'c2', name:'김보호', relation:'지정 연락처', phone:'010-9876-5432' }
+    ];
+    const defaultHistory = [
+      { id:'h1', date:'2026.03.18', start:'22:14', end:'22:31', route:'추천 안전 경로', status:'정상 귀가 완료', destination:'대전광역시 서구 둔산동' }
+    ];
+    const defaultShare = { enabled:true, lastSentAt: timeNow() };
+    const defaultFavorites = [
+      { id:'f1', label:'집', address:'대전광역시 유성구 봉명동' },
+      { id:'f2', label:'학교', address:'충남대학교' },
+      { id:'f3', label:'기숙사', address:'대전광역시 유성구 대학로' },
+      { id:'f4', label:'알바', address:'대전광역시 서구 둔산동' }
+    ];
+
+    let state = {
+      user: null,
+      activeTab: 'dashboard',
+      currentLocation: null,
+      contacts: [],
+      history: [],
+      sharing: defaultShare,
+      favorites: [],
+      routes: [],
+      selectedRouteId: null,
+      latestDestination: '대전광역시청',
+      latestStartQuery: '',
+      routeDestinationLabel: '',
+      routeStartLocation: null,
+      travelMode: 'sidewalk',
+      loadingRoutes: false,
+      routeError: '',
+      sosSent: false,
+      guardianMode: false,
+      batteryLevel: 74,
+      tripActive: false,
+      navigationActive: false,
+      navigationStepIndex: 0,
+      navigationStartedAt: null,
+      chatbotOpen: false,
+      chatbotMessages: [
+        { role:'ai', text:'안녕하세요! 저는 경로 안전점수 분석, 경로 비교, 귀가 체크리스트, 위치 공유 상태 확인, SOS 문구 작성을 도와주는 안전 귀가 AI 챗봇입니다.' }
+      ],
+      chatbotDraft: '',
+      chatgptEndpoint: '',
+      chatgptEnabled: false,
+      map: null,
+      mapLayers: [],
+      currentMarker: null,
+      navigationWatchId: null,
+      navigationRemainingMeters: null,
+      navigationProgress: 0,
+      lastNavRenderAt: 0
+    };
+
+    let mapSetupSeq = 0;
+
+    function timeNow() {
+      return new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    }
+
+    function normalizeKeyword(value) {
+      return String(value || '').toLowerCase().replace(/\s+/g, '').trim();
+    }
+    function kakaoReady() {
+      return !!(window.kakao && window.kakao.maps && window.kakao.maps.services);
+    }
+    function ensureKakaoReady() {
+      if (kakaoReady()) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        let tries = 0;
+        const timer = setInterval(() => {
+          if (kakaoReady()) {
+            clearInterval(timer);
+            resolve();
+          } else if (++tries > 80) {
+            clearInterval(timer);
+            reject(new Error('카카오맵 SDK가 아직 준비되지 않았습니다. JavaScript 키와 Web 플랫폼 도메인 등록을 확인해주세요.'));
+          }
+        }, 100);
+      });
+    }
+    function distanceBetween(a, b) {
+      const lat1 = Array.isArray(a) ? Number(a[0]) : Number(a.lat);
+      const lon1 = Array.isArray(a) ? Number(a[1]) : Number(a.lon);
+      const lat2 = Array.isArray(b) ? Number(b[0]) : Number(b.lat);
+      const lon2 = Array.isArray(b) ? Number(b[1]) : Number(b.lon);
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const p1 = lat1 * Math.PI / 180;
+      const p2 = lat2 * Math.PI / 180;
+      const s = Math.sin(dLat/2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dLon/2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+    }
+    function routeMetricGeometry(route) {
+      return route?.rawGeometry || route?.geometry || [];
+    }
+
+    function routeDisplayGeometry(route) {
+      return route?.displayGeometry || route?.geometry || [];
+    }
+
+    function routeGeometryDistance(route) {
+      const geom = routeMetricGeometry(route);
+      let total = 0;
+      for (let i = 1; i < geom.length; i++) total += distanceBetween(geom[i - 1], geom[i]);
+      return total || route?.distanceMeters || 0;
+    }
+    function projectPointOnSegmentMeters(point, a, b) {
+      const lat0 = Number(point.lat) * Math.PI / 180;
+      const mLat = 111320;
+      const mLon = 111320 * Math.cos(lat0);
+      const px = Number(point.lon) * mLon, py = Number(point.lat) * mLat;
+      const ax = Number(a[1]) * mLon, ay = Number(a[0]) * mLat;
+      const bx = Number(b[1]) * mLon, by = Number(b[0]) * mLat;
+      const dx = bx - ax, dy = by - ay;
+      const denom = dx * dx + dy * dy || 1;
+      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / denom));
+      const proj = [Number(a[0]) + (Number(b[0]) - Number(a[0])) * t, Number(a[1]) + (Number(b[1]) - Number(a[1])) * t];
+      const dist = Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
+      return { t, proj, dist };
+    }
+    function navigationMetrics(route, location = state.currentLocation) {
+      const geom = routeMetricGeometry(route);
+      const total = routeGeometryDistance(route);
+      if (!route || !location || geom.length < 2 || !total) {
+        return { remaining: route?.distanceMeters || total || 0, progressed: 0, progress: 0, nearestIndex: 0 };
+      }
+      let walkedBefore = 0;
+      let best = { dist: Infinity, progressed: 0, remaining: total, nearestIndex: 0 };
+      for (let i = 1; i < geom.length; i++) {
+        const segLen = distanceBetween(geom[i - 1], geom[i]);
+        const proj = projectPointOnSegmentMeters(location, geom[i - 1], geom[i]);
+        if (proj.dist < best.dist) {
+          const progressed = walkedBefore + segLen * proj.t;
+          best = {
+            dist: proj.dist,
+            progressed,
+            remaining: Math.max(0, total - progressed),
+            nearestIndex: i
+          };
+        }
+        walkedBefore += segLen;
+      }
+      return { ...best, progress: Math.max(0, Math.min(1, best.progressed / total)) };
+    }
+    function updateNavigationByLocation(location) {
+      const route = selectedRoute();
+      if (!route || !state.navigationActive) return;
+      const metrics = navigationMetrics(route, location);
+      const steps = navigationSteps(route);
+      const nextStep = steps.length ? Math.min(steps.length - 1, Math.floor(metrics.progress * steps.length)) : 0;
+      state.currentLocation = { ...location, label:'현재 위치' };
+      state.navigationRemainingMeters = metrics.remaining;
+      state.navigationProgress = metrics.progress;
+      state.navigationStepIndex = nextStep;
+      state.sharing = { ...state.sharing, lastSentAt: timeNow() };
+      save(SHARE_KEY, state.sharing);
+    }
+    function startNavigationWatch() {
+      if (!navigator.geolocation || state.navigationWatchId) return;
+      state.navigationWatchId = navigator.geolocation.watchPosition(
+        pos => {
+          updateNavigationByLocation({
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            label: '현재 위치',
+            accuracy: pos.coords.accuracy
+          });
+          const nowMs = Date.now();
+          if (nowMs - (state.lastNavRenderAt || 0) > 1200) {
+            state.lastNavRenderAt = nowMs;
+            render();
+          }
+        },
+        () => {},
+        { enableHighAccuracy:true, timeout:12000, maximumAge:1500 }
+      );
+    }
+    function stopNavigationWatch() {
+      if (state.navigationWatchId && navigator.geolocation) {
+        navigator.geolocation.clearWatch(state.navigationWatchId);
+      }
+      state.navigationWatchId = null;
+    }
+    function save(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    function load(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch { return fallback; }
+    }
+    function initStorage() {
+      if (!localStorage.getItem(USERS_KEY)) save(USERS_KEY, defaultUsers);
+      if (!localStorage.getItem(CONTACTS_KEY)) save(CONTACTS_KEY, defaultContacts);
+      if (!localStorage.getItem(HISTORY_KEY)) save(HISTORY_KEY, defaultHistory);
+      if (!localStorage.getItem(SHARE_KEY)) save(SHARE_KEY, defaultShare);
+      if (!localStorage.getItem(FAVORITES_KEY)) save(FAVORITES_KEY, defaultFavorites);
+    }
+    function scoreLabel(score) {
+      if (score >= 85) return ['매우 안전', 'safe'];
+      if (score >= 70) return ['안전', 'good'];
+      if (score >= 55) return ['보통', 'mid'];
+      return ['주의', 'warn'];
+    }
+    function formatDistance(meters) {
+      return meters < 1000 ? Math.round(meters) + 'm' : (meters / 1000).toFixed(1) + 'km';
+    }
+    function formatDuration(sec) {
+      return Math.max(1, Math.round(sec / 60)) + '분';
+    }
+    function estimateSafetyScore(route, kind, mode = 'foot') {
+      const distanceKm = route.distance / 1000;
+      const durationMin = route.duration / 60;
+      let base = mode === 'car' ? 70 : mode === 'foot' ? 76 : 82;
+      if (kind === 'balanced') base += 6;
+      if (kind === 'short') base -= mode === 'car' ? 10 : mode === 'foot' ? 14 : 16;
+      if (kind === 'safe') base += mode === 'car' ? 10 : mode === 'foot' ? 14 : 16;
+      const distancePenalty = Math.min(8, Math.round(distanceKm * 1.5));
+      const durationPenalty = Math.min(6, Math.round(durationMin / 12));
+      const score = Math.max(45, Math.min(96, base - distancePenalty - durationPenalty + (kind === 'safe' ? 4 : 0)));
+      const reasons = [];
+      const meta = modeMeta(mode);
+      if (kind === 'safe') reasons.push(`${meta.label} 기준으로 밝고 넓은 구간을 우선 고려`);
+      if (kind === 'balanced') reasons.push(`${meta.label} 기준 안전성과 이동 시간의 균형을 반영`);
+      if (kind === 'short') reasons.push(`${meta.label} 기준 최단 이동 시간 중심으로 계산`);
+      reasons.push('출발지와 목적지를 새로 입력할 때마다 경로를 다시 계산');
+      reasons.push('야간 귀가 상황을 고려한 위험도 안내 제공');
+      const factors = [
+        { label:'가로등 구간', state: kind !== 'short' ? '우수' : '보통' },
+        { label:'CCTV 인접성', state: kind === 'safe' ? '우수' : '양호' },
+        { label: mode === 'car' ? '차도/자동차 도로 접근성' : mode === 'sidewalk' ? '인도/횡단보도 적합성' : '일반 보행로 적합성', state: kind === 'safe' ? '양호' : '보통' },
+        { label:'골목 비율', state: kind === 'short' ? '높음' : '낮음' }
+      ];
+      return { score, reasons, factors };
+    }
+    function decodePolyline(str, precision = 5) {
+      let index = 0, lat = 0, lng = 0, coordinates = [], factor = Math.pow(10, precision);
+      while (index < str.length) {
+        let b, shift = 0, result = 0;
+        do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        let dlat = result & 1 ? ~(result >> 1) : result >> 1; lat += dlat;
+        shift = 0; result = 0;
+        do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        let dlng = result & 1 ? ~(result >> 1) : result >> 1; lng += dlng;
+        coordinates.push([lat / factor, lng / factor]);
+      }
+      return coordinates;
+    }
+    function simplifyPlaceName(item) {
+      const address = item.address || {};
+      return item.name || address.amenity || address.university || address.school || address.building || address.road || item.display_name?.split(',')[0] || '장소';
+    }
+
+    function placeFromNominatim(item) {
+      return {
+        lat: Number(item.lat),
+        lon: Number(item.lon),
+        label: item.display_name,
+        name: simplifyPlaceName(item),
+        type: item.type || item.class || '장소'
+      };
+    }
+
+    function selectedPlaceText(place) {
+      const parts = String(place.label || '').split(',').map(v => v.trim()).filter(Boolean);
+      const region = parts.slice(-4, -1).reverse().find(v => v && !v.includes(place.name)) || parts[1] || '';
+      return region ? `${place.name} (${region})` : place.name;
+    }
+
+    async function searchPlaceSuggestions(query, limit = 6) {
+      const keyword = String(query || '').trim();
+      if (keyword.length < 2) return [];
+      await ensureKakaoReady();
+      return new Promise((resolve, reject) => {
+        try {
+          const ps = new kakao.maps.services.Places();
+          ps.keywordSearch(keyword, (data, status) => {
+            if (status === kakao.maps.services.Status.OK && data && data.length) {
+              const normalized = data.slice(0, limit).map(item => ({
+                lat: Number(item.y),
+                lon: Number(item.x),
+                label: item.road_address_name || item.address_name || item.place_name,
+                name: item.place_name || keyword,
+                type: item.category_group_name || item.category_name?.split('>').pop()?.trim() || '카카오맵 장소',
+                phone: item.phone || '',
+                placeUrl: item.place_url || '',
+                source: 'kakao'
+              })).filter(place => Number.isFinite(place.lat) && Number.isFinite(place.lon));
+              resolve(normalized);
+            } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+              resolve([]);
+            } else {
+              reject(new Error('카카오맵 장소 검색에 실패했습니다: ' + status));
+            }
+          }, { size: Math.min(15, Math.max(1, limit)) });
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    async function geocodePlace(query) {
+      const results = await searchPlaceSuggestions(query, 1);
+      if (!results.length) throw new Error('카카오맵에서 검색 결과를 찾지 못했습니다');
+      return results[0];
+    }
+    function modeMeta(mode) {
+      const data = {
+        sidewalk: {
+          label:'인도 우선',
+          shortLabel:'인도',
+          icon:'🟢',
+          speed:1.15,
+          kmh:4.1,
+          profiles:['foot'],
+          primaryProfile:'foot',
+          guideType:'인도 우선 보행 안내',
+          guideSurface:'인도 · 횡단보도 · 보행자길',
+          guideAvoid:'차도 주행 안내 제외',
+          desc:'보행자가 인도와 횡단보도를 이용해 이동하는 상황을 기준으로 예상 도착 시간을 계산합니다.',
+          strictNotice:'차도 위 이동이 아니라 인도, 횡단보도, 보행자길을 우선하는 안내입니다.'
+        },
+        foot: {
+          label:'일반 도보',
+          shortLabel:'도보',
+          icon:'🚶',
+          speed:1.25,
+          kmh:4.5,
+          profiles:['foot'],
+          primaryProfile:'foot',
+          guideType:'일반 도보 안내',
+          guideSurface:'보행 가능한 길 · 인도 · 큰길 보행로',
+          guideAvoid:'차도 주행 안내 제외',
+          desc:'사람 평균 보행 속도 약 4.5km/h 기준으로 예상 도착 시간을 계산합니다.',
+          strictNotice:'자동차 차도가 아니라 사람이 걸을 수 있는 길을 기준으로 안내합니다.'
+        },
+        car: {
+          label:'차도',
+          shortLabel:'차도',
+          icon:'🚗',
+          speed:11.5,
+          kmh:41.4,
+          profiles:['driving'],
+          primaryProfile:'driving',
+          guideType:'차도/자동차 도로 안내',
+          guideSurface:'차도 · 자동차 도로 · 교차로',
+          guideAvoid:'인도/보행자 전용길 안내 제외',
+          desc:'자동차 경로 API의 주행 시간을 우선 사용하고, 없을 때만 평균 속도로 보정합니다.',
+          strictNotice:'보행자 인도가 아니라 자동차가 다니는 차도 기준 안내입니다.'
+        }
+      };
+      return data[mode] || data.sidewalk;
+    }
+
+    function modeLabel(mode) {
+      const meta = modeMeta(mode);
+      return `${meta.icon} ${meta.label}`;
+    }
+
+    function modeGuide(mode) {
+      return modeMeta(mode || state.travelMode || 'sidewalk');
+    }
+
+    function modeGuideNoticeHTML(mode = state.travelMode) {
+      const meta = modeGuide(mode);
+      return `
+        <div class="mode-confirmation">
+          <div class="mode-confirmation-head">
+            <div>
+              <div class="tiny muted">현재 길 안내 설정</div>
+              <div class="mode-title">${meta.icon} ${meta.guideType}</div>
+            </div>
+            <span class="badge good">${meta.shortLabel} 고정</span>
+          </div>
+          <div class="mode-chip-row">
+            <span class="mode-chip">안내 대상: ${meta.guideSurface}</span>
+            <span class="mode-chip">제외: ${meta.guideAvoid}</span>
+            <span class="mode-chip">예상 속도: ${meta.kmh}km/h</span>
+          </div>
+          <div class="mode-warning">${meta.strictNotice} 지도 경로 요청도 이 기준으로만 계산되며, 인도/도보 선택 시 자동차 경로로 자동 대체하지 않습니다.</div>
+        </div>`;
+    }
+
+    function routeModeSummaryHTML(route) {
+      const meta = modeGuide(route?.mode);
+      const profileNotice = route?.usedProfile && route.usedProfile !== meta.primaryProfile
+        ? `선택한 이동 기준과 실제 지도 요청 기준이 다릅니다. 경로를 다시 계산해주세요.`
+        : `지도 계산 기준도 ${meta.guideType}에 맞춰 요청했습니다.`;
+      return `
+        <div class="mode-confirmation">
+          <div class="mode-confirmation-head">
+            <div>
+              <div class="tiny muted">선택 경로 길 안내 타입</div>
+              <div class="mode-title">${meta.icon} ${meta.guideType}</div>
+            </div>
+            <span class="badge">${meta.shortLabel}</span>
+          </div>
+          <div class="mode-chip-row">
+            <span class="mode-chip">이동 위치: ${meta.guideSurface}</span>
+            <span class="mode-chip">안내 제외: ${meta.guideAvoid}</span>
+          </div>
+          <div class="mode-warning">${profileNotice}</div>
+        </div>`;
+    }
+
+    function adjustedDuration(route, mode, usedProfile) {
+      const meta = modeMeta(mode);
+      if (mode !== 'car') {
+        // OSRM 공개 서버가 보행자 경로 시간을 자동차와 비슷하게 주거나 자동차 경로로 대체하는 경우가 있어
+        // 인도 우선/일반 도보는 거리 ÷ 보행 속도로 별도 계산해 예상 도착 시간이 명확히 달라지도록 보정합니다.
+        return Math.max(60, route.distance / meta.speed);
+      }
+      return route.duration || Math.max(60, route.distance / meta.speed);
+    }
+
+    function normalizeTravelMode(mode) {
+      if (mode === 'car') return 'car';
+      if (mode === 'foot') return 'foot';
+      return 'sidewalk';
+    }
+
+    function isPedestrianMode(mode) {
+      return normalizeTravelMode(mode) !== 'car';
+    }
+
+    function makePedestrianDisplayGeometry(geometry, mode) {
+      // OSRM의 foot 경로는 실제 보행자 네트워크를 사용해도 지도에서는 도로 중심선 위에 그려지는 경우가 많습니다.
+      // 사용자가 인도/도보 모드를 차도 경로로 오해하지 않도록, 화면 표시용 선만 살짝 인도 방향으로 평행 이동합니다.
+      // 남은 거리 계산과 경로 진행률은 rawGeometry 원본 좌표를 계속 사용합니다.
+      if (!isPedestrianMode(mode) || !Array.isArray(geometry) || geometry.length < 2) return geometry || [];
+      const offsetMeters = mode === 'sidewalk' ? 8 : 6;
+      return geometry.map((point, index) => {
+        const prev = geometry[Math.max(0, index - 1)];
+        const next = geometry[Math.min(geometry.length - 1, index + 1)];
+        const lat = Number(point[0]);
+        const lon = Number(point[1]);
+        const metersPerLat = 111320;
+        const metersPerLon = Math.max(1, 111320 * Math.cos(lat * Math.PI / 180));
+        const dx = (Number(next[1]) - Number(prev[1])) * metersPerLon;
+        const dy = (Number(next[0]) - Number(prev[0])) * metersPerLat;
+        const len = Math.hypot(dx, dy) || 1;
+        const perpX = -dy / len;
+        const perpY = dx / len;
+        return [
+          lat + (perpY * offsetMeters) / metersPerLat,
+          lon + (perpX * offsetMeters) / metersPerLon
+        ];
+      });
+    }
+
+    function routeModeBadgeText(route) {
+      const mode = normalizeTravelMode(route?.mode || state.travelMode);
+      if (mode === 'car') return '🚗 차도 전용 경로';
+      if (mode === 'foot') return '🚶 도보 전용 경로';
+      return '🟢 인도 우선 경로';
+    }
+
+    async function fetchRoute(start, end, mode = 'foot') {
+      const lockedMode = normalizeTravelMode(mode);
+      const meta = modeMeta(lockedMode);
+      const profile = meta.primaryProfile;
+      try {
+        const url = `https://router.project-osrm.org/route/v1/${profile}/${start.lon},${start.lat};${end.lon},${end.lat}?overview=full&geometries=polyline&alternatives=true&steps=false`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`${meta.label} 경로 연결 실패`);
+        const data = await res.json();
+        if (!data.routes || !data.routes.length) throw new Error(`${meta.label} 경로를 찾을 수 없음`);
+        return { routes:data.routes, usedProfile:profile, lockedMode };
+      } catch (e) {
+        const target = lockedMode === 'car' ? '차도/자동차 도로' : '인도·횡단보도·보행자길';
+        throw new Error(`${meta.label} 기준의 ${target} 경로를 찾지 못했습니다. 선택한 이동 기준이 섞이지 않도록 다른 경로로 자동 대체하지 않았습니다. 출발지/목적지를 조금 더 구체적으로 입력해보세요.`);
+      }
+    }
+    function buildRouteVariants(routes, mode = 'foot', usedProfile = '') {
+      mode = normalizeTravelMode(mode);
+      const sorted = [...routes].sort((a,b) => adjustedDuration(a, mode, usedProfile) - adjustedDuration(b, mode, usedProfile));
+      const shortest = sorted[0];
+      const longest = sorted[sorted.length - 1];
+      const middle = sorted[Math.floor(sorted.length / 2)] || shortest;
+      const meta = modeMeta(mode);
+      const unique = [
+        { raw: longest || shortest, kind:'safe', name:'추천 안전 경로' },
+        { raw: middle || shortest, kind:'balanced', name:'균형 경로' },
+        { raw: shortest, kind:'short', name:'최단 경로' }
+      ].filter((item, idx, arr) => arr.findIndex(v => v.raw && v.raw.geometry === item.raw.geometry) === idx);
+      return unique.map((item, idx) => {
+        const duration = adjustedDuration(item.raw, mode, usedProfile);
+        const safe = estimateSafetyScore({ ...item.raw, duration }, item.kind, mode);
+        const guide = modeGuide(mode);
+        const fallbackNotice = [
+          `길 안내 타입 고정: ${guide.guideType}`,
+          `이동 위치: ${guide.guideSurface}`,
+          `제외 설정: ${guide.guideAvoid}`,
+          mode !== 'car'
+            ? `예상 도착 시간은 ${guide.label} 평균 속도 ${guide.kmh}km/h 기준으로 별도 계산`
+            : '예상 도착 시간은 차도/자동차 도로 API의 주행 시간 기준으로 계산',
+          `실제 지도 요청 기준: ${guide.primaryProfile}`,
+          mode !== 'car'
+            ? '자동차 차도 경로로 대체하지 않고 보행자 경로만 사용'
+            : '보행자 인도 경로로 대체하지 않고 자동차 도로 경로만 사용' 
+        ];
+        const rawGeometry = decodePolyline(item.raw.geometry);
+        const displayGeometry = isPedestrianMode(mode) ? makePedestrianDisplayGeometry(rawGeometry, mode) : rawGeometry;
+        return {
+          id: idx + 1,
+          name: item.name,
+          mode,
+          modeLabel: modeLabel(mode),
+          guideType: guide.guideType,
+          guideSurface: guide.guideSurface,
+          guideAvoid: guide.guideAvoid,
+          usedProfile: usedProfile || guide.primaryProfile,
+          eta: formatDuration(duration),
+          distance: formatDistance(item.raw.distance),
+          durationSeconds: duration,
+          distanceMeters: item.raw.distance,
+          score: safe.score,
+          reasons: [...fallbackNotice, ...safe.reasons],
+          factors: safe.factors,
+          geometry: rawGeometry,
+          rawGeometry,
+          displayGeometry,
+          routeSourceProfile: usedProfile || guide.primaryProfile,
+          visualNotice: isPedestrianMode(mode) ? '인도/도보 모드는 보행자 경로만 요청하고, 지도 표시선은 차도 중심선과 겹쳐 보이지 않도록 인도 방향으로 보정됩니다.' : '차도 모드는 자동차 도로 경로만 요청합니다.'
+        };
+      });
+    }
+    function selectedRoute() {
+      return state.routes.find(r => r.id === state.selectedRouteId) || null;
+    }
+    function setState(next) {
+      state = { ...state, ...next };
+      render();
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      const prevChatBox = document.getElementById('aiChatbotMessages');
+      const prevChatScrollTop = prevChatBox ? prevChatBox.scrollTop : 0;
+      const prevChatWasNearBottom = prevChatBox ? isChatbotNearBottom(prevChatBox) : true;
+
+      if (!state.user) {
+        app.innerHTML = authHTML();
+        bindAuth();
+      } else {
+        app.innerHTML = appHTML();
+        bindApp();
+        bindChatbot();
+        if (state.chatbotOpen) {
+          const input = document.getElementById('aiChatbotInput');
+          const nextChatBox = document.getElementById('aiChatbotMessages');
+          if (input) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
+          if (nextChatBox) {
+            nextChatBox.scrollTop = prevChatWasNearBottom ? nextChatBox.scrollHeight : prevChatScrollTop;
+          }
+        }
+        if (state.activeTab === 'route') requestAnimationFrame(() => setupMap());
+      }
+    }
+
+    function authHTML() {
+      return `
+        <div class="auth-wrap">
+          <div class="auth-grid">
+            <div class="hero">
+              <div class="title-row">
+                <div class="logo">S</div>
+                <div>
+                  <div class="small muted">Night Safety Platform Pro</div>
+                  <h1>밤길 안전 귀가 서비스</h1>
+                </div>
+              </div>
+              <p style="line-height:1.8" class="muted">가장 빠른 길이 아니라 가장 안심되는 귀가를 돕는 서비스라는 방향으로 다시 설계한 HTML 버전입니다.</p>
+              <div class="grid-2">
+                <div class="mini-card"><strong>원터치 귀가 시작</strong><div class="small muted">집 학교 기숙사 즐겨찾기</div></div>
+                <div class="mini-card"><strong>안전 근거 표시</strong><div class="small muted">경로와 함께 이유 설명</div></div>
+                <div class="mini-card"><strong>보호자 대시보드</strong><div class="small muted">웹에서도 상태 확인</div></div>
+                <div class="mini-card"><strong>긴급 대응</strong><div class="small muted">위치 공유 SOS 도착 알림</div></div>
+              </div>
+              <div class="highlight-card" style="margin-top:16px">
+                <strong>데모 계정</strong><br>
+                이메일 demo@nightsafe.app<br>
+                비밀번호 1234
+              </div>
+            </div>
+            <div class="card">
+              <div class="tabs" id="authTabs">
+                <button class="active" data-tab="login">로그인</button>
+                <button data-tab="signup">회원가입</button>
+              </div>
+              <div id="authError" class="alert hidden" style="margin-top:14px"></div>
+              <form id="loginForm" class="space-y" style="margin-top:18px">
+                <div><label>이메일</label><input id="loginEmail" value="demo@nightsafe.app"></div>
+                <div><label>비밀번호</label><input id="loginPassword" type="password" value="1234"></div>
+                <button type="submit" style="width:100%">로그인</button>
+              </form>
+              <form id="signupForm" class="space-y hidden" style="margin-top:18px">
+                <div><label>이름</label><input id="signupName"></div>
+                <div><label>이메일</label><input id="signupEmail"></div>
+                <div><label>비밀번호</label><input id="signupPassword" type="password"></div>
+                <button type="submit" style="width:100%">회원가입 후 시작</button>
+              </form>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function appHTML() {
+      return `
+      <div class="content-grid">
+        <aside class="sidebar">
+          <div class="title-row">
+            <div class="logo" style="width:48px;height:48px;font-size:20px">S</div>
+            <div>
+              <div class="small muted">Night Safety</div>
+              <strong>안전 귀가 플랫폼</strong>
+            </div>
+          </div>
+          <p class="small muted" style="line-height:1.7">길 추천이 아니라 귀가 과정 전체를 관리하는 안전 동행 시스템 구조입니다.</p>
+          <div style="margin-top:18px">
+            ${navButton('dashboard','대시보드')}
+            ${navButton('route','안전 경로')}
+            ${navButton('share','위치 공유')}
+            ${navButton('guardian','보호자 화면')}
+            ${navButton('ai','AI 기능')}
+            ${navButton('sos','긴급 신고')}
+            ${navButton('history','귀가 기록')}
+            ${navButton('policy','보안 정책')}
+          </div>
+          <div class="card" style="margin-top:20px;padding:16px">
+            <div class="small muted">현재 사용자</div>
+            <div style="margin-top:10px"><strong>${state.user.name}</strong></div>
+            <div class="small muted">${state.user.email}</div>
+            <button id="logoutBtn" class="secondary" style="width:100%;margin-top:12px">로그아웃</button>
+          </div>
+        </aside>
+        <div>
+          <div class="topbar">
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <div class="small muted">Working HTML Demo</div>
+                <strong>밤길 안전 귀가 서비스 Pro</strong>
+              </div>
+              <div class="row">
+                <span class="badge">원터치 귀가</span>
+                <span class="badge">보호자 연동</span>
+                <span class="badge">경로 근거 표시</span>
+              </div>
+            </div>
+          </div>
+          <div class="main-content">
+            ${state.activeTab === 'dashboard' ? dashboardHTML() : ''}
+            ${state.activeTab === 'route' ? routeHTML() : ''}
+            ${state.activeTab === 'share' ? shareHTML() : ''}
+            ${state.activeTab === 'guardian' ? guardianHTML() : ''}
+            ${state.activeTab === 'ai' ? aiHTML() : ''}
+            ${state.activeTab === 'sos' ? sosHTML() : ''}
+            ${state.activeTab === 'history' ? historyHTML() : ''}
+            ${state.activeTab === 'policy' ? policyHTML() : ''}
+          </div>
+        </div>
+        ${chatbotHTML()}
+      </div>`;
+    }
+
+    function navButton(key, label) {
+      return `<button class="nav-btn ${state.activeTab === key ? 'active' : ''}" data-nav="${key}">${label}</button>`;
+    }
+
+    function dashboardHTML() {
+      const route = selectedRoute();
+      return `
+      <div class="space-y">
+        <div class="stats">
+          ${statCard('현재 안전도', route ? route.score + '점' : '-', '추천 경로 기준 점수')}
+          ${statCard('예상 귀가 시간', route ? route.eta : '-', '실제 경로 계산 기반')}
+          ${statCard('위치 공유 상태', state.sharing.enabled ? 'ON' : 'OFF', '지정 연락처와 연동')}
+          ${statCard('귀가 상태', state.tripActive ? '이동 중' : '대기 중', '원터치 귀가 시작 가능')}
+        </div>
+
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <h3 style="margin-top:0">도입된 AI 핵심 기능</h3>
+              <p class="small muted">사진에 있는 3가지 AI 기능을 실제 화면과 자체 판단 로직으로 추가했습니다.</p>
+            </div>
+            <span class="badge good">AI 적용 완료</span>
+          </div>
+          ${aiFeatureSummaryHTML(true)}
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>원터치 귀가 시작</h3>
+            <p class="small muted">밤길에서는 입력을 줄이는 게 중요하니 자주 가는 목적지를 바로 선택할 수 있게 구성했습니다.</p>
+            <div class="grid-2" style="margin-top:14px">
+              ${state.favorites.map(f => `<button class="favorite-btn" data-favorite="${f.address}"><strong>${f.label}</strong><div class="small muted" style="margin-top:6px">${f.address}</div></button>`).join('')}
+            </div>
+          </div>
+          <div class="card">
+            <h3>귀가 전 체크</h3>
+            <p class="small muted">사용자가 바로 확인할 수 있는 최소한의 안전 체크 항목</p>
+            <div class="space-y" style="margin-top:14px">
+              ${checkItem('위치 권한', state.currentLocation ? '완료' : '필요')}
+              ${checkItem('긴급 연락처', state.contacts.length ? '완료' : '필요')}
+              ${checkItem('위치 공유', state.sharing.enabled ? '활성' : '비활성')}
+              ${checkItem('배터리 상태', state.batteryLevel + '%')}
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>이 앱의 핵심 방향</h3>
+            <div class="space-y">
+              <div class="mini-card">불안 감소: 사용자가 혼자 귀가할 때 심리적 부담을 줄이는 구조</div>
+              <div class="mini-card">위험 예방: 안전한 경로와 위험도 안내를 함께 제공</div>
+              <div class="mini-card">빠른 대응: 위급 시 보호자와 즉시 연결되는 구조</div>
+            </div>
+          </div>
+          <div class="guardian-panel">
+            <div class="small muted">보호자 관점 미리보기</div>
+            <h3 style="margin-top:6px">보호자 대시보드 요약</h3>
+            <div class="status-strip">
+              <div class="status-cell"><div class="tiny muted">현재 상태</div><strong>${state.tripActive ? '귀가 중' : '대기 중'}</strong></div>
+              <div class="status-cell"><div class="tiny muted">마지막 전송</div><strong>${state.sharing.lastSentAt}</strong></div>
+              <div class="status-cell"><div class="tiny muted">예상 도착</div><strong>${route ? route.eta : '-'}</strong></div>
+              <div class="status-cell"><div class="tiny muted">배터리</div><strong>${state.batteryLevel}%</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function statCard(title, value, desc) {
+      return `<div class="card"><div class="stat-title">${title}</div><div class="stat-value">${value}</div><div class="small muted">${desc}</div></div>`;
+    }
+    function checkItem(title, value) {
+      return `<div class="checklist-item"><span>${title}</span><strong>${value}</strong></div>`;
+    }
+
+    function routeHTML() {
+      const route = selectedRoute();
+      return `
+      <div class="route-grid">
+        <div class="card">
+          <h3>안전 경로 탐색</h3>
+          <p class="small muted">단순히 빠른 길이 아니라, 밤길 기준에서 더 안심되는 경로를 설명과 함께 보여줍니다.</p>
+          ${state.routeError ? `<div class="alert">${state.routeError}</div>` : ''}
+          <div class="grid-3">
+            <div class="place-field">
+              <label>출발지</label>
+              <input id="startQuery" value="${escapeHTML(state.latestStartQuery || '')}" placeholder="비우면 현재 위치 사용" autocomplete="off">
+            </div>
+            <div class="place-field">
+              <label>목적지</label>
+              <input id="destinationQuery" value="${escapeHTML(state.latestDestination || '')}" placeholder="예: 대전광역시청" autocomplete="off">
+            </div>
+            <div>
+              <label>이동 기준</label>
+              <select id="travelModeSelect">
+                <option value="sidewalk" ${state.travelMode === 'sidewalk' ? 'selected' : ''}>🟢 인도 우선 보행</option>
+                <option value="foot" ${state.travelMode === 'foot' ? 'selected' : ''}>🚶 일반 도보</option>
+                <option value="car" ${state.travelMode === 'car' ? 'selected' : ''}>🚗 차도/자동차 도로</option>
+              </select>
+            </div>
+          </div>
+          ${modeGuideNoticeHTML(state.travelMode)}
+          <div class="suggestion-board">
+            <div class="suggestion-card">
+              <div class="suggestion-card-header"><strong>출발지 연관검색어</strong><span>검색 후 장소 선택</span></div>
+              <div id="startSuggestions" class="place-suggestions" aria-label="출발지 연관검색어">
+                <div class="place-suggestion-empty">출발지를 입력하면 관련 장소가 크게 표시됩니다.</div>
+              </div>
+            </div>
+            <div class="suggestion-card">
+              <div class="suggestion-card-header"><strong>목적지 연관검색어</strong><span>동명이소 장소 구분</span></div>
+              <div id="destinationSuggestions" class="place-suggestions" aria-label="목적지 연관검색어">
+                <div class="place-suggestion-empty">목적지를 입력하면 관련 장소가 크게 표시됩니다.</div>
+              </div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top:14px">
+            <button id="findRouteBtn">${state.loadingRoutes ? '경로 계산 중' : '안전 경로 찾기'}</button>
+            <button id="useLocationBtn" class="secondary">현재 위치 사용</button>
+            <button id="resetRouteBtn" class="secondary">초기화</button>
+          </div>
+          <div style="margin-top:16px"><div id="map"></div></div>
+          ${state.routes.length ? `<div class="grid-3" style="margin-top:14px">${state.routes.map(r => routeOptionHTML(r)).join('')}</div>` : ''}
+        </div>
+        <div class="space-y">
+          <div class="card">
+            <h3>선택 경로 상세</h3>
+            ${route ? routeDetailHTML(route) : '<div class="mini-card" style="background:#f8fafc">경로를 계산하면 이곳에 안전 점수와 추천 근거가 표시됩니다.</div>'}
+          </div>
+          <div class="card">
+            <h3>왜 이 길이 더 안전한가</h3>
+            <div class="space-y">
+              <div class="mini-card">안전 경로 찾기를 누르는 순간 선택값을 잠그고, 인도/도보는 foot 경로만, 차도는 driving 경로만 사용</div>
+              <div class="mini-card">CCTV 및 감시 인프라 접근성 고려</div>
+              <div class="mini-card">편의점 같은 도움 요청 가능 시설 접근성 반영</div>
+              <div class="mini-card">어두운 골목 비율이 높은 경로는 감점</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function routeOptionHTML(route) {
+      const [text, tone] = scoreLabel(route.score);
+      return `<div class="route-option ${state.selectedRouteId === route.id ? 'active' : ''}" data-route-id="${route.id}">
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div><strong>${route.modeLabel || modeLabel(state.travelMode)} · ${route.name}</strong><div class="small muted" style="margin-top:4px">${route.distance} · ${route.eta}</div><div class="tiny muted" style="margin-top:6px">길 안내: <strong>${route.guideSurface || modeGuide(route.mode).guideSurface}</strong></div></div>
+          <span class="badge ${tone}">${route.score}점</span>
+        </div>
+        <div class="small muted" style="margin-top:10px">${route.reasons[0]}</div>
+      </div>`;
+    }
+
+    function routeDetailHTML(route) {
+      const [text, tone] = scoreLabel(route.score);
+      return `
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div><strong style="font-size:18px">${route.modeLabel || modeLabel(state.travelMode)} · ${route.name}</strong><div class="small muted">예상 ${route.eta} · ${route.distance}</div></div>
+          <span class="badge ${tone}">${text}</span>
+        </div>
+        ${routeModeSummaryHTML(route)}
+        ${route.visualNotice ? `<div class="mini-card" style="margin-top:12px;background:#f8fafc">${route.visualNotice}</div>` : ''}
+        <div style="margin-top:14px">
+          <div class="row" style="justify-content:space-between"><span class="small">안전 점수</span><strong>${route.score}/100</strong></div>
+          <div class="progress" style="margin-top:8px"><div style="width:${route.score}%"></div></div>
+        </div>
+        <div class="space-y" style="margin-top:14px">
+          ${route.reasons.map(reason => `<div class="mini-card">${reason}</div>`).join('')}
+        </div>
+        <div class="space-y" style="margin-top:14px">
+          ${route.factors.map(f => `<div class="checklist-item"><span>${f.label}</span><strong>${f.state}</strong></div>`).join('')}
+        </div>
+        <button id="startTripBtn" class="${state.navigationActive ? 'stop' : ''}" style="width:100%;margin-top:14px;${state.navigationActive ? 'background:#b91c1c' : ''}">${state.navigationActive ? '안내 중지' : '이 경로로 귀가 시작 + 네비 안내 시작'}</button>
+        ${aiRouteInsightHTML(route)}
+        ${navigationPanelHTML(route)}`;
+    }
+
+    function navigationSteps(route) {
+      if (!route) return [];
+      const meta = modeGuide(route.mode || state.travelMode);
+      const destination = state.latestDestination || '목적지';
+      const safetyHint = route.score < 70
+        ? '주의 구간이 있을 수 있으니 위치 공유를 유지하고 밝은 큰길을 우선하세요.'
+        : '현재 경로는 안전도가 양호합니다. 그래도 주변을 확인하며 이동하세요.';
+      const modeHint = route.mode === 'car'
+        ? '차도/자동차 도로 안내입니다. 인도나 보행자 전용길이 아니라 자동차가 다니는 도로 기준으로 이동하세요.'
+        : route.mode === 'sidewalk'
+          ? '인도 우선 안내입니다. 차도로 내려가지 말고 인도, 횡단보도, 보행자길을 따라 이동하세요.'
+          : '일반 도보 안내입니다. 자동차 차도가 아니라 사람이 걸을 수 있는 보행 가능한 길을 기준으로 이동하세요.';
+      return [
+        `${meta.icon} ${meta.guideType}를 시작합니다. ${route.name} 기준으로 ${destination}까지 이동합니다.`,
+        `안내 대상은 “${meta.guideSurface}”입니다. ${modeHint}`,
+        `출발 후 약 ${Math.max(1, Math.round(route.durationSeconds / 60 / 4))}분 동안 현재 경로를 따라 이동하세요. 안내 제외 대상: ${meta.guideAvoid}.`,
+        `중간 구간입니다. 예상 전체 거리 ${route.distance}, 남은 시간은 앱의 예상 시간 ${route.eta}를 기준으로 확인하세요.`,
+        `${safetyHint} 경로를 벗어난 느낌이 들면 현재 이동 기준을 다시 확인하고 경로를 다시 계산하세요.`,
+        `목적지 근처입니다. 도착하면 안내 종료를 누르고 보호자에게 귀가 완료 상태를 확인시켜 주세요.`
+      ];
+    }
+
+    function navigationPanelHTML(route) {
+      const steps = navigationSteps(route);
+      const current = Math.min(state.navigationStepIndex || 0, Math.max(0, steps.length - 1));
+      const metrics = navigationMetrics(route);
+      const distanceProgress = state.navigationActive ? Math.round((metrics.progress || state.navigationProgress || 0) * 100) : 0;
+      const progress = state.navigationActive ? distanceProgress : (steps.length ? Math.round(((current + 1) / steps.length) * 100) : 0);
+      const remaining = state.navigationActive
+        ? formatDistance(state.navigationRemainingMeters ?? metrics.remaining ?? route.distanceMeters)
+        : route.distance;
+      return `
+        <div class="navigation-panel ${state.navigationActive ? 'active' : ''}">
+          <div class="navigation-head">
+            <div>
+              <strong>실시간 네비 안내</strong>
+              <div class="small muted" style="margin-top:5px">프로젝트 디자인 2 기준으로 카카오맵, 연관검색어, 위치 기반 남은 거리 갱신을 적용했습니다.</div>
+            </div>
+            <span class="badge ${state.navigationActive ? 'safe' : ''}">${state.navigationActive ? '안내 중' : '대기 중'}</span>
+          </div>
+          <div style="margin-top:12px">
+            <div class="row" style="justify-content:space-between">
+              <span class="small">안내 진행률</span>
+              <strong>${progress}%</strong>
+            </div>
+            <div class="progress" style="margin-top:8px"><div style="width:${progress}%"></div></div>
+            <div style="margin-top:10px"><span class="remaining-chip">남은 거리 ${remaining}</span></div>
+          </div>
+          <div class="navigation-instruction">${steps[current] || '경로를 선택하면 안내가 표시됩니다.'}</div>
+          <div class="navigation-controls">
+            <button id="prevNavigationStepBtn" class="secondary" ${!state.navigationActive || current <= 0 ? 'disabled' : ''}>이전 안내</button>
+            <button id="nextNavigationStepBtn" ${!state.navigationActive ? 'disabled' : ''}>다음 안내</button>
+            <button id="stopNavigationBtn" class="stop" ${!state.navigationActive ? 'disabled' : ''}>안내 종료</button>
+          </div>
+          <div class="nav-step-list">
+            ${steps.map((step, idx) => `<div class="nav-step ${idx === current ? 'current' : ''}">${idx + 1}. ${step}</div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function nextNavigationStep() {
+      const route = selectedRoute();
+      if (!route) return;
+      const max = navigationSteps(route).length - 1;
+      setState({ navigationStepIndex: Math.min(max, (state.navigationStepIndex || 0) + 1) });
+    }
+
+    function prevNavigationStep() {
+      setState({ navigationStepIndex: Math.max(0, (state.navigationStepIndex || 0) - 1) });
+    }
+
+    function stopNavigation() {
+      stopNavigationWatch();
+      setState({ navigationActive:false, tripActive:false, navigationStepIndex:0, navigationStartedAt:null, navigationRemainingMeters:null, navigationProgress:0 });
+    }
+
+    function shareHTML() {
+      return `
+      <div class="two-col">
+        <div class="card">
+          <h3>실시간 위치 공유</h3>
+          <p class="small muted">귀가 중일 때 보호자에게 현재 상태를 전달하는 기능입니다.</p>
+          <div class="grid-4">
+            <div class="mini-card"><div class="small muted">공유 대상</div><strong>${state.contacts.length}명</strong></div>
+            <div class="mini-card"><div class="small muted">마지막 송신</div><strong>${state.sharing.lastSentAt || '-'}</strong></div>
+            <div class="mini-card"><div class="small muted">예상 도착</div><strong>${selectedRoute() ? selectedRoute().eta : '-'}</strong></div>
+            <div class="mini-card"><div class="small muted">배터리</div><strong>${state.batteryLevel}%</strong></div>
+          </div>
+          <div class="switch-row" style="margin-top:16px">
+            <div><strong>위치 공유 활성화</strong><div class="small muted">공유를 켜면 일정 주기로 상태가 갱신됩니다</div></div>
+            <input id="shareToggle" type="checkbox" ${state.sharing.enabled ? 'checked' : ''} style="width:20px;height:20px">
+          </div>
+          <div class="status-strip">
+            <div class="status-cell"><div class="tiny muted">현재 위치</div><strong>${state.currentLocation ? '확인됨' : '없음'}</strong></div>
+            <div class="status-cell"><div class="tiny muted">경로 이탈 감지</div><strong>예정</strong></div>
+            <div class="status-cell"><div class="tiny muted">장시간 정지 감지</div><strong>예정</strong></div>
+            <div class="status-cell"><div class="tiny muted">통신 상태</div><strong>정상</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>지정 연락처</h3>
+          <p class="small muted">보호자와 지정 연락처는 필요한 정보만 빠르게 확인할 수 있어야 합니다.</p>
+          <div class="space-y">
+            ${state.contacts.map(c => `<div class="mini-card"><strong>${c.name}</strong><div class="small muted">${c.relation}</div><div style="margin-top:8px">${c.phone}</div></div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function guardianHTML() {
+      const route = selectedRoute();
+      return `
+      <div class="two-col">
+        <div class="card">
+          <h3>보호자 웹 대시보드</h3>
+          <p class="small muted">보호자는 복잡한 정보보다 지금 안전한지 빠르게 확인할 수 있어야 합니다.</p>
+          <div class="status-strip">
+            <div class="status-cell"><div class="tiny muted">현재 상태</div><strong>${state.tripActive ? '귀가 중' : '대기 중'}</strong></div>
+            <div class="status-cell"><div class="tiny muted">마지막 갱신</div><strong>${state.sharing.lastSentAt}</strong></div>
+            <div class="status-cell"><div class="tiny muted">예상 도착</div><strong>${route ? route.eta : '-'}</strong></div>
+            <div class="status-cell"><div class="tiny muted">긴급 상황</div><strong>${state.sosSent ? '발생' : '없음'}</strong></div>
+          </div>
+          <div class="highlight-card" style="margin-top:16px">
+            <strong>현재 위치</strong>
+            <div class="small muted" style="margin-top:6px">${state.currentLocation ? state.currentLocation.lat.toFixed(5) + ', ' + state.currentLocation.lon.toFixed(5) : '위치 정보 없음'}</div>
+          </div>
+          <div class="space-y" style="margin-top:16px">
+            <div class="checklist-item"><span>배터리</span><strong>${state.batteryLevel}%</strong></div>
+            <div class="checklist-item"><span>위치 공유</span><strong>${state.sharing.enabled ? '활성' : '비활성'}</strong></div>
+            <div class="checklist-item"><span>선택 경로</span><strong>${route ? route.name : '미선택'}</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>보호자 알림 예시</h3>
+          <div class="space-y">
+            <div class="mini-card">귀가가 시작되었습니다</div>
+            <div class="mini-card">현재 위치가 업데이트되었습니다</div>
+            <div class="mini-card">예상 도착 시간이 갱신되었습니다</div>
+            <div class="mini-card">도착 완료 시 자동 알림 전송</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function sosHTML() {
+      return `
+      <div class="two-col">
+        <div class="card">
+          <h3>긴급 신고 / SOS</h3>
+          <p class="small muted">진짜 급한 상황에서는 복잡한 입력보다 빠른 전달이 더 중요합니다.</p>
+          <div style="display:flex;justify-content:center;align-items:center;padding:26px 0">
+            <button id="sosBtn" style="width:170px;height:170px;border-radius:999px;font-size:32px">SOS</button>
+          </div>
+          <div><label>긴급 메시지</label><textarea id="sosMessage">긴급 상황입니다 현재 위치를 확인해주세요</textarea></div>
+          ${state.sosSent ? `<div class="success" style="margin-top:14px">지정 연락처 ${state.contacts.length}명에게 현재 위치와 긴급 메시지 전송 시뮬레이션을 완료했습니다.</div>` : ''}
+          <div class="space-y" style="margin-top:14px">
+            <div class="checklist-item"><span>현재 위치</span><strong>${state.currentLocation ? '확인됨' : '없음'}</strong></div>
+            <div class="checklist-item"><span>긴급 연락처</span><strong>${state.contacts.length}명</strong></div>
+            <div class="checklist-item"><span>즉시 전달 항목</span><strong>위치 시간 메시지</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>확장 기능 방향</h3>
+          <div class="space-y">
+            <div class="mini-card">길게 누르기 방식으로 오작동 감소</div>
+            <div class="mini-card">흔들기 또는 음성 키워드로 SOS 확장 가능</div>
+            <div class="mini-card">문자 전송 기능과 연결하면 실제 전송 가능</div>
+            <div class="mini-card">가까운 편의점 지구대 안심시설 표시 가능</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+
+    function aiRiskPrediction(route = selectedRoute()) {
+      const hour = new Date().getHours();
+      const nightBonus = hour >= 22 || hour <= 5 ? 14 : hour >= 18 ? 7 : 0;
+      let risk = route ? Math.max(8, 100 - route.score) : 42;
+      if (!state.sharing.enabled) risk += 10;
+      if (!state.currentLocation) risk += 5;
+      if (state.batteryLevel < 30) risk += 14;
+      if ((route?.mode || state.travelMode) === 'foot') risk += nightBonus;
+      if ((route?.mode || state.travelMode) === 'sidewalk') risk += Math.round(nightBonus * 0.8);
+      if (state.sosSent) risk += 25;
+      risk = Math.max(0, Math.min(100, Math.round(risk)));
+      const level = risk >= 70 ? '높음' : risk >= 45 ? '중간' : '낮음';
+      const badgeClass = risk >= 70 ? 'warn' : risk >= 45 ? 'mid' : 'safe';
+      const best = state.routes.length ? [...state.routes].sort((a,b) => b.score - a.score)[0] : route;
+      const action = risk >= 70
+        ? '밝은 큰길로 우회하고, 위치 공유와 SOS 버튼을 켜둔 상태로 이동하세요.'
+        : risk >= 45
+          ? '추천 안전 경로를 우선 선택하고 보호자에게 예상 도착 시간을 공유하세요.'
+          : '현재 상태는 안정적입니다. 그래도 귀가 시작 버튼과 위치 공유를 함께 사용하는 것이 좋습니다.';
+      const prediction = best
+        ? `${best.name}이 현재 조건에서 가장 안전할 가능성이 높습니다. 안전점수 ${best.score}점, 예상 ${best.eta}입니다.`
+        : '아직 계산된 경로가 없어 기본 위험도만 예측했습니다. 안전 경로 탭에서 출발지와 목적지를 입력하면 경로별로 다시 판단합니다.';
+      return { risk, level, badgeClass, action, prediction, recommendedRoute: best };
+    }
+
+    function aiAnomalyDetection() {
+      const route = selectedRoute();
+      const elapsedSec = state.navigationStartedAt ? Math.max(0, Math.round((Date.now() - new Date(state.navigationStartedAt).getTime()) / 1000)) : 0;
+      const lateAtNight = (() => { const h = new Date().getHours(); return h >= 22 || h <= 5; })();
+      const signals = [
+        {
+          label: '장시간 정지',
+          state: state.tripActive && elapsedSec > 600 && state.navigationStepIndex <= 1 ? '주의' : state.tripActive ? '모니터링 중' : '대기',
+          detail: '귀가 시작 후 같은 안내 단계에 오래 머무르면 정지 가능성을 감지합니다.'
+        },
+        {
+          label: '경로 이탈',
+          state: route ? '모니터링 중' : '경로 없음',
+          detail: '선택된 경로 좌표와 현재 위치 차이가 커지는 상황을 감지하도록 설계했습니다.'
+        },
+        {
+          label: '비정상 속도 변화',
+          state: state.tripActive && lateAtNight && !state.sharing.enabled ? '확인 필요' : '정상',
+          detail: '인도 우선·일반 도보·차도 기준 예상 속도와 실제 이동 흐름이 크게 다르면 알림을 띄웁니다.'
+        }
+      ];
+      const warnCount = signals.filter(s => s.state.includes('주의') || s.state.includes('확인')).length;
+      const score = Math.min(100, warnCount * 35 + (state.sosSent ? 30 : 0));
+      const level = score >= 70 ? '위험' : score >= 35 ? '주의' : state.tripActive ? '정상 모니터링' : '대기';
+      const badgeClass = score >= 70 ? 'warn' : score >= 35 ? 'mid' : 'safe';
+      return { signals, score, level, badgeClass };
+    }
+
+    function aiPersonalSafetyAlert() {
+      const route = selectedRoute();
+      const hour = new Date().getHours();
+      const night = hour >= 18 || hour <= 5;
+      const matchedFavorite = state.favorites.find(f => {
+        const target = (state.latestDestination || '').replace(/\s+/g, '');
+        const addr = (f.address || '').replace(/\s+/g, '');
+        return target && (addr.includes(target) || target.includes(addr) || f.label.includes(state.latestDestination || ''));
+      });
+      const title = night ? '야간 귀가 맞춤 알림' : '사전 귀가 준비 알림';
+      const tips = [];
+      if (matchedFavorite) tips.push(`자주 가는 장소 “${matchedFavorite.label}” 방향으로 인식했습니다.`);
+      if (route) tips.push(`${route.name} 기준 안전점수는 ${route.score}점입니다.`);
+      if (!state.sharing.enabled) tips.push('위치 공유가 꺼져 있어 보호자 공유를 켜는 것을 추천합니다.');
+      if (state.batteryLevel < 40) tips.push(`배터리가 ${state.batteryLevel}%라서 이동 전 충전을 권장합니다.`);
+      if (!tips.length) tips.push('현재 설정은 안정적입니다. 귀가 시작 후 보호자 화면에서 상태를 확인할 수 있습니다.');
+      const message = `${state.user?.name || '사용자'}님에게 맞춘 알림입니다. ${tips[0]}`;
+      return { title, message, tips };
+    }
+
+    function aiFeatureCardHTML(icon, title, desc, detail, action, actionLabel = '확인하기') {
+      return `
+        <div class="ai-feature-card active-ai">
+          <div class="ai-feature-icon">${icon}</div>
+          <div>
+            <div class="ai-feature-title">${title}</div>
+            <div class="ai-feature-desc">${desc}</div>
+            <div class="ai-feature-detail">${detail}</div>
+          </div>
+          <div class="ai-feature-actions">
+            <button type="button" data-ai-action="${action}">${actionLabel}</button>
+            <button type="button" class="secondary" data-nav="ai">AI 화면</button>
+          </div>
+        </div>`;
+    }
+
+    function aiFeatureSummaryHTML(compact = false) {
+      const risk = aiRiskPrediction();
+      const anomaly = aiAnomalyDetection();
+      const personal = aiPersonalSafetyAlert();
+      return `
+        <div class="ai-feature-board ${compact ? 'compact' : ''}">
+          ${aiFeatureCardHTML('AI', 'AI 위험도 예측 경로 추천', '단순 최단거리 대신 밤길에서 더 안전할 가능성이 높은 경로를 제안합니다.', `현재 예측 위험도 ${risk.risk}/100 · 권장: ${risk.recommendedRoute ? risk.recommendedRoute.name : '경로 계산 필요'}`, 'risk', '위험도 예측')}
+          ${aiFeatureCardHTML('감지', 'AI 이상행동 감지', '장시간 정지, 경로 이탈, 비정상 속도 변화를 감지해 사용자와 보호자에게 알립니다.', `현재 상태: ${anomaly.level} · 감지 신호 ${anomaly.signals.length}개 모니터링`, 'anomaly', '감지 확인')}
+          ${aiFeatureCardHTML('알림', 'AI 맞춤형 안전 알림', '사용자의 선호와 과거 선택을 반영해 더 개인화된 귀가 경험을 제공합니다.', personal.message, 'personal', '알림 생성')}
+        </div>`;
+    }
+
+    function aiRiskPredictionText() {
+      const risk = aiRiskPrediction();
+      const route = risk.recommendedRoute;
+      return `AI 위험도 예측 경로 추천 결과입니다.
+
+예측 위험도: ${risk.level} (${risk.risk}/100)
+추천 경로: ${route ? `${route.modeLabel || modeLabel(state.travelMode)} ${route.name} · 안전점수 ${route.score}점 · ${route.distance} · ${route.eta}` : '아직 경로 없음'}
+판단 근거: ${risk.prediction}
+
+AI 행동 제안
+${risk.action}`;
+    }
+
+    function aiAnomalyDetectionText() {
+      const result = aiAnomalyDetection();
+      return `AI 이상행동 감지 결과입니다.
+
+종합 상태: ${result.level} (${result.score}/100)
+
+${result.signals.map(s => `- ${s.label}: ${s.state}\n  ${s.detail}`).join('\n')}
+
+실제 서비스에서는 GPS 변화량, 이동 속도, 경로 좌표 이탈 거리, 정지 시간을 실시간으로 계산해 보호자와 사용자에게 알림을 보내는 구조로 확장할 수 있습니다.`;
+    }
+
+    function aiPersonalSafetyAlertText() {
+      const alert = aiPersonalSafetyAlert();
+      return `${alert.title}
+
+${alert.message}
+
+맞춤 제안
+${alert.tips.map(t => `- ${t}`).join('\n')}
+
+이 기능은 사용자의 즐겨찾기, 과거 귀가 기록, 현재 경로, 위치 공유 상태를 반영해 개인별 알림을 만드는 구조입니다.`;
+    }
+
+    function aiRouteInsightHTML(route) {
+      const risk = aiRiskPrediction(route);
+      return `
+        <div class="ai-route-panel">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <strong>AI 위험도 예측</strong>
+              <div class="small" style="margin-top:6px">${risk.prediction}</div>
+            </div>
+            <span class="badge ${risk.badgeClass}">${risk.level} · ${risk.risk}/100</span>
+          </div>
+          <button type="button" class="secondary" data-ai-action="risk" style="margin-top:12px;width:100%">AI 분석 결과 자세히 보기</button>
+        </div>`;
+    }
+
+    function aiHTML() {
+      const risk = aiRiskPrediction();
+      const anomaly = aiAnomalyDetection();
+      const personal = aiPersonalSafetyAlert();
+      return `
+      <div class="space-y">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="small muted">AI Safety Engine</div>
+              <h2 style="margin:6px 0 0">AI 기능 도입 화면</h2>
+              <p class="muted" style="line-height:1.7">사진에 있던 3가지 기능을 실제 HTML 화면에 적용했습니다. 외부 서버 없이도 현재 경로, 위치 공유, 배터리, 귀가 상태를 바탕으로 자체 판단이 작동합니다.</p>
+            </div>
+            <span class="badge good">브라우저 자체 AI 로직</span>
+          </div>
+          ${aiFeatureSummaryHTML()}
+        </div>
+
+        <div class="ai-panel-grid">
+          <div class="ai-insight-card">
+            <div class="small muted">AI 위험도 예측</div>
+            <div class="ai-insight-value">${risk.risk}/100</div>
+            <span class="badge ${risk.badgeClass}">${risk.level}</span>
+            <p class="small muted" style="line-height:1.6">${risk.prediction}</p>
+            <button id="runAIRiskBtn" style="width:100%;margin-top:10px">위험도 재분석</button>
+          </div>
+          <div class="ai-insight-card">
+            <div class="small muted">이상행동 감지</div>
+            <div class="ai-insight-value">${anomaly.level}</div>
+            <span class="badge ${anomaly.badgeClass}">${anomaly.score}/100</span>
+            <div class="ai-signal-list">
+              ${anomaly.signals.map(s => `<div class="ai-signal-item"><strong>${s.label}</strong><div class="small muted" style="margin-top:5px">${s.state} · ${s.detail}</div></div>`).join('')}
+            </div>
+            <button id="simulateAnomalyBtn" class="secondary" style="width:100%;margin-top:10px">감지 결과 보기</button>
+          </div>
+          <div class="ai-insight-card">
+            <div class="small muted">맞춤형 안전 알림</div>
+            <div class="ai-insight-value">알림</div>
+            <span class="badge good">개인화</span>
+            <p class="small muted" style="line-height:1.6">${personal.message}</p>
+            <div class="space-y">
+              ${personal.tips.map(t => `<div class="mini-card">${t}</div>`).join('')}
+            </div>
+            <button id="createPersonalAlertBtn" class="secondary" style="width:100%;margin-top:10px">맞춤 알림 생성</button>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h3>교수님께 설명할 때 핵심 문장</h3>
+            <div class="space-y">
+              <div class="mini-card"><strong>위험도 예측 경로 추천</strong><div class="small muted" style="margin-top:6px">최단거리만 보지 않고 안전점수, 시간대, 위치공유 여부, 배터리 상태를 함께 계산해 밤길 위험도를 예측합니다.</div></div>
+              <div class="mini-card"><strong>이상행동 감지</strong><div class="small muted" style="margin-top:6px">귀가 중 장시간 정지, 경로 이탈, 비정상 속도 변화를 감지해 위급 상황의 골든타임을 줄이는 기능입니다.</div></div>
+              <div class="mini-card"><strong>맞춤형 안전 알림</strong><div class="small muted" style="margin-top:6px">사용자의 자주 가는 장소와 과거 귀가 기록을 반영해 상황에 맞는 안내 문구를 제공합니다.</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>현재 HTML에서 구현된 방식</h3>
+            <div class="space-y">
+              <div class="checklist-item"><span>경로 데이터</span><strong>${state.routes.length ? state.routes.length + '개' : '없음'}</strong></div>
+              <div class="checklist-item"><span>선택 경로</span><strong>${selectedRoute() ? selectedRoute().name : '미선택'}</strong></div>
+              <div class="checklist-item"><span>위치 공유</span><strong>${state.sharing.enabled ? 'ON' : 'OFF'}</strong></div>
+              <div class="checklist-item"><span>귀가 상태</span><strong>${state.tripActive ? '이동 중' : '대기 중'}</strong></div>
+              <div class="checklist-item"><span>배터리</span><strong>${state.batteryLevel}%</strong></div>
+            </div>
+            <button type="button" data-nav="route" style="width:100%;margin-top:14px">안전 경로 탭에서 테스트</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function showAIResult(text) {
+      setState({
+        chatbotOpen: true,
+        chatbotMessages: [...state.chatbotMessages, { role:'ai', text }]
+      });
+    }
+
+    function historyHTML() {
+      return `
+      <div class="two-col">
+        <div class="card">
+          <h3>귀가 기록 조회</h3>
+          <p class="small muted">출발부터 도착까지 기록을 남겨 서비스 신뢰성을 높입니다.</p>
+          <div class="space-y">
+            ${state.history.length ? state.history.map(item => `
+              <div class="history-item">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div><strong>${item.date}</strong><div class="small muted">${item.route}</div></div>
+                  <span class="badge">${item.status}</span>
+                </div>
+                <div class="grid-4" style="margin-top:12px">
+                  <div class="mini-card"><div class="small muted">출발</div><strong>${item.start}</strong></div>
+                  <div class="mini-card"><div class="small muted">도착</div><strong>${item.end}</strong></div>
+                  <div class="mini-card"><div class="small muted">목적지</div><strong>${item.destination}</strong></div>
+                  <div class="mini-card"><div class="small muted">상태</div><strong>${item.status}</strong></div>
+                </div>
+              </div>`).join('') : '<div class="mini-card">아직 저장된 귀가 기록이 없습니다.</div>'}
+          </div>
+        </div>
+        <div class="card">
+          <h3>기록의 의미</h3>
+          <div class="space-y">
+            <div class="mini-card">사용자는 이전 귀가 내역을 쉽게 확인할 수 있습니다.</div>
+            <div class="mini-card">보호자는 귀가 완료 여부를 간단히 검토할 수 있습니다.</div>
+            <div class="mini-card">서비스 운영 측면에서는 어떤 기능이 자주 쓰이는지 분석하는 기준이 됩니다.</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function policyHTML() {
+      return `
+      <div class="two-col">
+        <div class="card">
+          <h3>데이터 항목 및 보안 정책</h3>
+          <p class="small muted">위치 기반 안전 서비스라면 개인정보 보호 기준이 분명해야 합니다.</p>
+          <div class="space-y">
+            <div class="mini-card">현재 위치: 경로 탐색, 위치 공유, SOS 전송에 활용</div>
+            <div class="mini-card">목적지 정보: 경로 계산과 예상 소요 시간 산정에 활용</div>
+            <div class="mini-card">긴급 연락처: 보호자 또는 지정 대상에게 긴급 메시지 전달</div>
+            <div class="mini-card">귀가 이력: 출발·도착 시각과 경로 요약 확인용</div>
+            <div class="mini-card">위치 정보는 귀가 서비스 실행 중에만 수집하는 구조 권장</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>실서비스 확장 순서</h3>
+          <div class="space-y">
+            <div class="mini-card"><strong>1단계</strong><div class="small muted" style="margin-top:6px">현재 HTML처럼 로그인 위치 지도 경로 기록 구조 안정화</div></div>
+            <div class="mini-card"><strong>2단계</strong><div class="small muted" style="margin-top:6px">Firebase 또는 Supabase로 사용자별 데이터 동기화 구현</div></div>
+            <div class="mini-card"><strong>3단계</strong><div class="small muted" style="margin-top:6px">위험 구간 데이터와 실제 문자 전송 기능을 연결해 서비스화</div></div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+
+    function escapeHTML(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function chatbotHTML() {
+      return `
+        <button type="button" id="aiChatbotFab" class="ai-chatbot-fab" aria-label="AI 챗봇 열기">AI</button>
+        <section id="aiChatbotWindow" class="ai-chatbot-window ${state.chatbotOpen ? 'open' : ''}" aria-label="AI 안전 챗봇">
+          <div class="ai-chatbot-header">
+            <div>
+              <strong>AI 안전 챗봇</strong>
+              <div class="tiny" style="opacity:.8;margin-top:3px">경로 안전도와 귀가 상황을 분석해요</div>
+            </div>
+            <button type="button" id="aiChatbotClose" aria-label="AI 챗봇 닫기">×</button>
+          </div>
+          <div id="aiChatbotMessages" class="ai-chatbot-messages">
+            ${state.chatbotMessages.map(m => `<div class="${m.role === 'user' ? 'user-message' : 'ai-message'}">${escapeHTML(m.text)}</div>`).join('')}
+          </div>
+          <div class="ai-chatbot-quick">
+            <button type="button" data-ai-quick="현재 선택한 경로 안전 분석해줘">현재 경로 분석</button>
+            <button type="button" data-ai-quick="경로 세 개 비교해줘">경로 비교</button>
+            <button type="button" data-ai-quick="귀가 전 체크리스트 알려줘">귀가 체크</button>
+            <button type="button" data-ai-quick="위치 공유 상태 알려줘">공유 상태</button>
+            <button type="button" data-ai-quick="SOS 메시지 만들어줘">SOS 문구</button>
+            <button type="button" data-ai-quick="인도 도보 차도 기준 설명해줘">이동 기준</button>
+            <button type="button" data-ai-quick="밤길이 불안할 때 어떻게 해야 해?">불안할 때</button>
+            <button type="button" data-ai-quick="안녕">인사</button>
+            <button type="button" data-ai-quick="내 상황을 자체 AI로 판단해줘">AI 판단</button>
+            <button type="button" data-ai-quick="AI 위험도 예측 경로 추천해줘">위험도 예측</button>
+            <button type="button" data-ai-quick="AI 이상행동 감지 결과 보여줘">이상행동 감지</button>
+            <button type="button" data-ai-quick="AI 맞춤형 안전 알림 만들어줘">맞춤 알림</button>
+          </div>
+          <details class="ai-chatgpt-settings">
+            <summary>ChatGPT 연동 설정</summary>
+            <div class="settings-row">
+              <input id="chatgptEndpointInput" placeholder="예: /api/chatgpt" value="${escapeHTML(state.chatgptEndpoint || '')}">
+              <button type="button" id="saveChatgptEndpointBtn">저장</button>
+            </div>
+            <label class="row tiny" style="margin-top:8px;gap:6px">
+              <input id="chatgptEnabledToggle" type="checkbox" ${state.chatgptEnabled ? 'checked' : ''} style="width:16px;height:16px">
+              ChatGPT 응답 우선 사용
+            </label>
+            <div class="ai-chatgpt-status">API 키는 HTML에 넣지 말고 서버에 숨겨야 합니다. 이 입력칸에는 서버 주소만 넣으세요.</div>
+          </details>
+          <form id="aiChatbotForm" class="ai-chatbot-input">
+            <input id="aiChatbotInput" placeholder="예: 인도 우선으로 바꿔줘 / 차도 기준이야? / 불안해" autocomplete="off" value="${escapeHTML(state.chatbotDraft || '')}">
+            <button type="submit">전송</button>
+          </form>
+        </section>`;
+    }
+
+    function routeRiskLevel(score) {
+      if (score >= 85) return '안전도가 높은 편입니다';
+      if (score >= 70) return '대체로 안전하지만 주변 확인이 필요합니다';
+      if (score >= 55) return '보통 수준이라 밝은 큰길 위주로 이동하는 것이 좋습니다';
+      return '주의가 필요한 경로입니다. 가능하면 다른 경로를 선택하거나 보호자 공유를 켜세요';
+    }
+
+    function routeAnalysisText(route) {
+      if (!route) {
+        return '아직 분석할 경로가 없어요. 안전 경로 탭에서 출발지와 목적지를 입력하고 “안전 경로 찾기”를 먼저 눌러주세요. 그다음 저에게 “이 경로 안전해?”라고 물어보면 현재 선택된 경로를 분석해드릴게요.';
+      }
+      const [label] = scoreLabel(route.score);
+      const factors = route.factors.map(f => `- ${f.label}: ${f.state}`).join('\n');
+      const reasons = route.reasons.map(r => `- ${r}`).join('\n');
+      return `${route.modeLabel || modeLabel(state.travelMode)} · ${route.name} 분석 결과입니다.\n\n안전점수: ${route.score}/100 (${label})\n이동 기준: ${route.modeLabel || modeLabel(state.travelMode)}\n예상 이동: ${route.distance}, ${route.eta}\n판단: ${routeRiskLevel(route.score)}\n\n주요 근거\n${reasons}\n\n세부 요소\n${factors}\n\n추천 행동: ${route.score < 70 ? '위치 공유를 켜고, 가능하면 추천 안전 경로나 균형 경로를 선택하세요.' : '현재 경로로 이동해도 괜찮지만, 귀가 시작 버튼을 누르고 위치 공유를 켜는 것을 권장해요.'}`;
+    }
+
+    function compareRoutesText() {
+      if (!state.routes.length) {
+        return '비교할 경로가 아직 없어요. 안전 경로 탭에서 목적지를 입력하고 인도 우선/일반 도보/차도 중 이동 기준을 선택해 경로를 계산하면 추천 안전 경로, 균형 경로, 최단 경로를 안전점수 기준으로 비교해드릴 수 있어요.';
+      }
+      const ranked = [...state.routes].sort((a,b) => b.score - a.score);
+      const lines = ranked.map((r, i) => `${i+1}. ${r.modeLabel || modeLabel(state.travelMode)} ${r.name}: ${r.score}점, ${r.distance}, ${r.eta} — ${routeRiskLevel(r.score)}`).join('\n');
+      const best = ranked[0];
+      const fastest = [...state.routes].sort((a,b) => a.durationSeconds - b.durationSeconds)[0];
+      return `경로 비교 결과입니다.\n\n${lines}\n\n추천: 밤길 귀가라면 “${best.name}”이 가장 적합해요. ${fastest && fastest.id !== best.id ? `가장 빠른 경로는 “${fastest.name}”이지만 안전점수는 ${fastest.score}점입니다.` : '가장 빠른 경로와 안전한 경로가 크게 다르지 않아요.'}`;
+    }
+
+    function checklistText() {
+      const route = selectedRoute();
+      const items = [
+        state.currentLocation ? '현재 위치 확인 완료' : '현재 위치 권한을 먼저 허용하세요',
+        state.contacts.length ? `긴급 연락처 ${state.contacts.length}명 등록됨` : '긴급 연락처를 등록하세요',
+        state.sharing.enabled ? '위치 공유 ON' : '위치 공유를 켜는 것을 권장합니다',
+        route ? `선택 경로 있음: ${route.name}, 안전점수 ${route.score}점` : '아직 선택한 경로가 없습니다',
+        state.batteryLevel >= 30 ? `배터리 ${state.batteryLevel}%로 양호` : `배터리 ${state.batteryLevel}%입니다. 충전 후 이동을 권장합니다`
+      ];
+      return `귀가 전 체크리스트입니다.\n\n${items.map(x => `- ${x}`).join('\n')}\n\n위험하거나 불안하면 SOS 탭을 열어두고 이동하세요.`;
+    }
+
+    function shareStatusText() {
+      const route = selectedRoute();
+      return `위치 공유 상태입니다.\n\n- 공유 상태: ${state.sharing.enabled ? 'ON' : 'OFF'}\n- 공유 대상: ${state.contacts.length}명\n- 마지막 갱신: ${state.sharing.lastSentAt || '-'}\n- 귀가 상태: ${state.tripActive ? '이동 중' : '대기 중'}\n- 예상 도착: ${route ? route.eta : '경로 미선택'}\n- 배터리: ${state.batteryLevel}%\n\n${state.sharing.enabled ? '현재 설정은 괜찮아요. 귀가 시작 후 보호자 화면에서 상태를 확인할 수 있습니다.' : '밤길 이동 전에는 위치 공유를 켜는 것을 추천해요. “위치 공유 켜줘”라고 입력하면 제가 켜드릴게요.'}`;
+    }
+
+    function sosText() {
+      const loc = state.currentLocation ? `${state.currentLocation.lat.toFixed(5)}, ${state.currentLocation.lon.toFixed(5)}` : '현재 위치 확인 필요';
+      return `SOS 메시지 예시입니다.\n\n“긴급 상황입니다. 현재 위치를 확인해주세요. 위치: ${loc}. 앱에서 보호자 화면을 확인해 주세요.”\n\n위급할 때는 앱의 SOS 버튼과 함께 112 신고를 우선 고려하세요.`;
+    }
+
+    function guardianSummaryText() {
+      const route = selectedRoute();
+      return `보호자에게 보여줄 요약입니다.\n\n현재 상태: ${state.tripActive ? '귀가 중' : '대기 중'}\n선택 경로: ${route ? `${route.name} (${route.score}점)` : '없음'}\n예상 도착: ${route ? route.eta : '-'}\n위치 공유: ${state.sharing.enabled ? 'ON' : 'OFF'}\n마지막 갱신: ${state.sharing.lastSentAt || '-'}\n긴급 상황: ${state.sosSent ? '발생' : '없음'}\n\n보호자는 복잡한 지도보다 상태, 예상 도착, 마지막 갱신 시간을 먼저 확인하는 게 좋아요.`;
+    }
+
+    function destinationHelpText(message) {
+      const cleaned = message.replace(/분석|안전|경로|목적지|알려줘|어때|\?|\./g, '').trim();
+      if (cleaned.length > 2) {
+        return `“${cleaned}” 방향으로 이동하려면 안전 경로 탭에서 목적지에 입력해 경로를 계산해보세요. 경로가 계산되면 제가 안전점수, 거리, 예상 시간, 위험 요소를 바탕으로 안전한지 분석해드릴 수 있어요.`;
+      }
+      return '원하는 목적지를 입력해 경로를 계산하면 제가 그 경로의 안전점수와 위험 요소를 분석해드릴 수 있어요. 예: “대전광역시청 가는 길 안전해?”';
+    }
+
+
+    function greetingText() {
+      const hour = new Date().getHours();
+      const timeGreeting = hour >= 18 || hour <= 5 ? '밤길 이동 전이라면 제가 더 꼼꼼하게 확인해드릴게요.' : '미리 귀가 경로를 준비해두면 밤에 더 안심할 수 있어요.';
+      const route = selectedRoute();
+      return `안녕하세요! 저는 밤길 안전귀가 서비스 안에서 작동하는 자체 AI 챗봇입니다.
+
+${timeGreeting}
+
+지금 제가 바로 도와줄 수 있는 일
+- 현재 경로 안전점수 분석
+- 인도 우선/일반 도보/차도 기준별 경로 판단
+- 불안한 상황에서 행동 추천
+- 위치 공유 ON/OFF
+- 보호자에게 보낼 요약문 작성
+- SOS 문구 작성
+
+${route ? `현재 선택된 경로는 ${route.modeLabel || modeLabel(state.travelMode)} ${route.name}, 안전점수 ${route.score}점입니다. “이 경로 안전해?”라고 물어보면 바로 분석해드릴게요.` : '아직 선택된 경로가 없어요. 안전 경로 탭에서 목적지를 입력하면 제가 그 경로를 분석해드릴게요.'}`;
+    }
+
+    function selfAIThinkingText(message) {
+      const text = normalizeChatText(message);
+      const route = selectedRoute();
+      const riskWords = [
+        ['불안', 12], ['무서', 15], ['어둡', 14], ['골목', 12], ['혼자', 10],
+        ['따라', 25], ['쫓', 25], ['위험', 18], ['배터리', 8], ['길잃', 10]
+      ];
+      let risk = route ? Math.max(0, 100 - route.score) : 35;
+      const detected = [];
+      riskWords.forEach(([word, point]) => {
+        if (text.includes(word)) {
+          risk += point;
+          detected.push(word);
+        }
+      });
+      if (!state.sharing.enabled) risk += 10;
+      if (state.batteryLevel < 30) risk += 10;
+      risk = Math.max(0, Math.min(100, risk));
+      const level = risk >= 70 ? '높음' : risk >= 45 ? '중간' : '낮음';
+      const action = risk >= 70
+        ? '지금은 안전 행동을 우선해야 합니다. 밝은 상가·편의점·지구대 쪽으로 이동하고, 필요하면 즉시 112 신고와 SOS를 사용하세요.'
+        : risk >= 45
+          ? '주의가 필요한 상황입니다. 위치 공유를 켜고 큰길 위주로 이동하며, 경로를 다시 비교하는 것을 추천합니다.'
+          : '현재 판단으로는 비교적 안정적인 상태입니다. 그래도 밤길에서는 위치 공유와 귀가 시작을 켜두는 것이 좋습니다.';
+      return `자체 AI 판단 결과입니다.
+
+분석한 상황: ${detected.length ? detected.join(', ') : '일반 밤길 귀가 질문'}
+위험도 판단: ${level} (${risk}/100)
+현재 경로: ${route ? `${route.modeLabel || modeLabel(state.travelMode)} ${route.name}, 안전점수 ${route.score}점` : '선택된 경로 없음'}
+위치 공유: ${state.sharing.enabled ? 'ON' : 'OFF'}
+배터리: ${state.batteryLevel}%
+
+AI 추천
+${action}
+
+바로 할 수 있는 명령: “위치 공유 켜줘”, “현재 경로 분석해줘”, “SOS 문구 만들어줘”, “경로 비교해줘”`;
+    }
+
+    function modeAdviceText() {
+      return `이 사이트의 길 안내 기준은 세 가지로 확실히 나뉩니다.
+
+- 🟢 인도 우선: 밤길 안전 귀가 기본값입니다. 차도가 아니라 인도, 횡단보도, 보행자길 중심으로 안내합니다.
+- 🚶 일반 도보: 사람이 걸을 수 있는 보행 가능한 길 기준입니다. 인도 우선보다 조금 더 일반적인 도보 경로입니다.
+- 🚗 차도: 자동차가 이동하는 차도/자동차 도로 기준입니다. 보행자 인도 안내가 아닙니다.
+
+현재 선택 기준은 ${modeLabel(state.travelMode)}입니다. “인도 우선으로 바꿔줘”, “도보로 바꿔줘”, “차도 기준으로 바꿔줘”라고 말하면 기준을 바꿔둘게요.`;
+    }
+
+    function localAIHelpText(message) {
+      const route = selectedRoute();
+      const worries = [];
+      const raw = message.toLowerCase();
+      if (raw.includes('불안') || raw.includes('무서') || raw.includes('혼자')) worries.push('혼자 이동이 불안한 상황');
+      if (raw.includes('어둡') || raw.includes('골목')) worries.push('어두운 골목이 걱정되는 상황');
+      if (raw.includes('따라') || raw.includes('쫓')) worries.push('누군가 따라오는 것 같은 상황');
+      if (raw.includes('배터리') || raw.includes('폰')) worries.push('휴대폰 배터리나 연락 문제');
+      const situation = worries.length ? worries.join(', ') : '밤길 귀가 상황';
+      return `AI 판단 결과입니다.
+
+상황 해석: ${situation}
+현재 경로: ${route ? `${route.modeLabel || modeLabel(state.travelMode)} ${route.name}, 안전점수 ${route.score}점` : '아직 선택된 경로 없음'}
+위치 공유: ${state.sharing.enabled ? '켜짐' : '꺼짐'}
+배터리: ${state.batteryLevel}%
+
+추천 행동
+1. 가능하면 밝은 큰길과 사람이 있는 길을 우선 선택하세요.
+2. 위치 공유를 켜고 보호자에게 현재 상태를 알려두세요.
+3. 불안이 계속되면 가까운 편의점, 지구대, 밝은 상가 쪽으로 이동하세요.
+4. 실제 위급 상황이면 앱 SOS와 함께 112 신고를 우선하세요.
+
+제가 할 수 있는 바로 실행 가능한 도움: “위치 공유 켜줘”, “현재 경로 분석해줘”, “SOS 문구 만들어줘”, “인도 우선으로 바꿔줘”라고 입력해보세요.`;
+    }
+
+    function appUsageText() {
+      return `이 사이트에서 제가 도와줄 수 있는 AI 기능입니다.
+
+- 사용자가 적은 문장을 분석해서 경로 안전도, 위치 공유, SOS, 보호자 요약 중 필요한 답변을 선택
+- 인도 우선/일반 도보/차도 기준에 맞춰 현재 선택 경로를 다르게 설명
+- 오타가 있어도 핵심 단어를 추정해서 답변
+- 위치 공유 ON/OFF 같은 간단한 앱 조작 실행
+- 보호자에게 보낼 요약문과 긴급 문구 생성
+- AI 위험도 예측 경로 추천, 이상행동 감지, 맞춤형 안전 알림 화면 제공
+
+외부 대화 API 없이 브라우저 안의 자체 AI 판단 엔진으로 작동하도록 구성했습니다. 사용자의 문장에서 인사, 불안, 위험, 경로, 위치공유, 이동수단, SOS 의도를 분류하고 현재 사이트 상태를 함께 계산해 답변합니다.`;
+    }
+
+    function normalizeChatText(message) {
+      return message
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[.,!?~]/g, '')
+        .replace(/안저|안전도|안저도|안전저/g, '안전')
+        .replace(/경로우|겅로|경ㄹ|길/g, '경로')
+        .replace(/인도|보도|보행자길|횡단보도|보행자전용/g, '인도')
+        .replace(/도보오|걸어서|걷는|보행/g, '도보')
+        .replace(/차도|자동차도로|자동차|운전|차량/g, '차도')
+        .replace(/인도어|바이크|싸이클/g, '인도')
+        .replace(/공유우|공ㅇ유|위치공유좀|위치공ㅇ/g, '공유')
+        .replace(/보호쟈|보호저|보호자한테/g, '보호자')
+        .replace(/긴그|긴급ㅅ|위그|위급ㅅ/g, '긴급')
+        .replace(/쏘스|에스오에스|s0s/g, 'sos')
+        .replace(/쳌|채크|체크크/g, '체크')
+        .replace(/비굑|비교오|비교해조/g, '비교')
+        .replace(/켜조|켜줘요|켜죠/g, '켜줘')
+        .replace(/꺼조|꺼줘요|꺼죠/g, '꺼줘');
+    }
+
+    function hasAny(text, keywords) {
+      return keywords.some(keyword => text.includes(keyword));
+    }
+
+    function editDistance(a, b) {
+      if (!a || !b) return Math.max(a.length, b.length);
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+          );
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function fuzzyHas(text, keywords) {
+      if (hasAny(text, keywords)) return true;
+      const chunks = text.match(/[가-힣a-z0-9]+/g) || [];
+      return chunks.some(chunk => keywords.some(keyword => {
+        const limit = keyword.length <= 2 ? 1 : 2;
+        return editDistance(chunk, keyword) <= limit;
+      }));
+    }
+
+    function getChatbotReply(message) {
+      const text = normalizeChatText(message);
+      const original = message.toLowerCase();
+      const wantsShare = fuzzyHas(text, ['공유', '위치공유', '위치']);
+      const wantsRoute = fuzzyHas(text, ['경로', '안전', '안전해', '위험', '위험해']);
+      const wantsOn = hasAny(text, ['켜', 'on', '온', '활성', '켜줘']);
+      const wantsOff = hasAny(text, ['꺼', 'off', '오프', '비활성', '꺼줘']);
+      const wantsMode = fuzzyHas(text, ['인도', '도보', '차도', '차', '이동기준', '기준']);
+
+      if (hasAny(text, ['안녕', '하이', 'hello', 'hi', '반가워', 'ㅎㅇ', '안뇽', '안녕하세요'])) {
+        return greetingText();
+      }
+      if (hasAny(text, ['생각해', '판단해', '자체ai', 'ai판단', '위험도판단'])) {
+        return selfAIThinkingText(message);
+      }
+      if (hasAny(text, ['위험도예측', '위험예측', '안전경로추천', 'ai위험도'])) {
+        return aiRiskPredictionText();
+      }
+      if (hasAny(text, ['이상행동', '장시간정지', '경로이탈', '속도변화', '감지결과'])) {
+        return aiAnomalyDetectionText();
+      }
+      if (hasAny(text, ['맞춤형안전알림', '맞춤알림', '개인화', '사용자선호', '과거선택'])) {
+        return aiPersonalSafetyAlertText();
+      }
+
+      if (hasAny(text, ['인도']) && (wantsMode || wantsRoute || hasAny(text, ['바꿔', '변경', '설정']))) {
+        state.travelMode = 'sidewalk';
+        state.routes = [];
+        state.selectedRouteId = null;
+        return '이동 기준을 🟢 인도 우선 보행으로 바꿨어요. 차도가 아니라 인도·횡단보도·보행자길 중심으로 안내합니다. 목적지를 다시 입력하고 안전 경로 찾기를 눌러주세요.';
+      }
+      if (hasAny(text, ['도보']) && (wantsMode || wantsRoute || hasAny(text, ['바꿔', '변경', '설정']))) {
+        state.travelMode = 'foot';
+        state.routes = [];
+        state.selectedRouteId = null;
+        return '이동 기준을 🚶 일반 도보로 바꿨어요. 자동차 차도가 아니라 사람이 걸을 수 있는 길 기준으로 새로 계산됩니다.';
+      }
+      if (hasAny(text, ['차도', '차']) && (wantsMode || wantsRoute || hasAny(text, ['바꿔', '변경', '설정']))) {
+        state.travelMode = 'car';
+        state.routes = [];
+        state.selectedRouteId = null;
+        return '이동 기준을 🚗 차도/자동차 도로로 바꿨어요. 인도 안내가 아니라 자동차 도로 기준으로 새로 계산됩니다.';
+      }
+      if (hasAny(text, ['인도'])) {
+        return '이번 버전에서는 헷갈리지 않게 인도 우선, 일반 도보, 차도 세 가지만 사용하도록 정리했습니다. 현재 지원하지 않는 이동수단 대신 일반 도보 또는 차도 기준을 선택해주세요.';
+      }
+      if (wantsShare && wantsOn) {
+        const next = { ...state.sharing, enabled: true, lastSentAt: timeNow() };
+        save(SHARE_KEY, next);
+        state.sharing = next;
+        return '위치 공유를 ON으로 변경했어요. 보호자 화면에서 마지막 갱신 시간과 귀가 상태를 확인할 수 있습니다.';
+      }
+      if (wantsShare && wantsOff) {
+        const next = { ...state.sharing, enabled: false, lastSentAt: timeNow() };
+        save(SHARE_KEY, next);
+        state.sharing = next;
+        return '위치 공유를 OFF로 변경했어요. 밤길 이동 중이라면 다시 켜두는 것을 권장합니다.';
+      }
+      if (wantsMode || hasAny(text, ['인도도보차도', '도보차도', '이동수단'])) {
+        return modeAdviceText();
+      }
+      if ((hasAny(text, ['현재', '선택', '이경로', '이길']) && wantsRoute) || hasAny(text, ['경로안전', '안전분석', '위험분석'])) {
+        return routeAnalysisText(selectedRoute());
+      }
+      if (fuzzyHas(text, ['비교', '추천']) || hasAny(text, ['세개', '3개', '셋중'])) {
+        return compareRoutesText();
+      }
+      if (fuzzyHas(text, ['체크', '준비']) || hasAny(text, ['귀가전', '챙길것', '확인할것'])) {
+        return checklistText();
+      }
+      if (fuzzyHas(text, ['sos', '긴급', '신고', '위급'])) {
+        return sosText();
+      }
+      if (fuzzyHas(text, ['보호자'])) {
+        return guardianSummaryText();
+      }
+      if (hasAny(text, ['사용법', '기능', '뭐할수', 'ai', '에이아이', '챗봇'])) {
+        return appUsageText();
+      }
+      if (hasAny(text, ['불안', '무서', '따라', '쫓', '어둡', '골목', '혼자', '배터리'])) {
+        return selfAIThinkingText(message);
+      }
+      if (wantsShare || fuzzyHas(text, ['위치'])) {
+        return shareStatusText();
+      }
+      if (fuzzyHas(text, ['기록', '이력'])) {
+        const latest = state.history[0];
+        return latest ? `최근 귀가 기록입니다.
+
+날짜: ${latest.date}
+출발: ${latest.start}
+도착/예상 도착: ${latest.end}
+경로: ${latest.route}
+목적지: ${latest.destination}
+상태: ${latest.status}` : '아직 저장된 귀가 기록이 없습니다.';
+      }
+      if (hasAny(text, ['목적지', '가는경로', '가는길', '가도', '안전해']) || original.includes('가도 돼')) {
+        return destinationHelpText(message);
+      }
+      return selfAIThinkingText(message);
+    }
+
+    function isChatbotNearBottom(box) {
+      if (!box) return true;
+      return box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    }
+
+    function addChatbotMessage(role, text) {
+      state.chatbotMessages = [...state.chatbotMessages, { role, text }];
+      const box = document.getElementById('aiChatbotMessages');
+      if (!box) return;
+      const shouldStayAtBottom = role === 'user' || isChatbotNearBottom(box);
+      const msg = document.createElement('div');
+      msg.className = role === 'user' ? 'user-message' : 'ai-message';
+      msg.textContent = text;
+      box.appendChild(msg);
+      if (shouldStayAtBottom) box.scrollTop = box.scrollHeight;
+    }
+
+    function buildChatGPTContext() {
+      const route = selectedRoute();
+      return {
+        service: '밤길 안전 귀가 서비스',
+        travelMode: modeLabel(state.travelMode),
+        selectedRoute: route ? {
+          name: route.name,
+          score: route.score,
+          eta: route.eta,
+          distance: route.distance,
+          reasons: route.reasons,
+          factors: route.factors
+        } : null,
+        sharing: state.sharing.enabled ? 'ON' : 'OFF',
+        batteryLevel: state.batteryLevel,
+        tripActive: state.tripActive,
+        contactsCount: state.contacts.length
+      };
+    }
+
+    async function requestChatGPTReply(message) {
+      if (!state.chatgptEnabled || !state.chatgptEndpoint) return null;
+      const res = await fetch(state.chatgptEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          context: buildChatGPTContext(),
+          messages: state.chatbotMessages.slice(-8)
+        })
+      });
+      if (!res.ok) throw new Error('ChatGPT 서버 연결 실패');
+      const data = await res.json();
+      return data.reply || data.message || data.text || null;
+    }
+
+    async function sendChatbotMessage(text) {
+      const message = text.trim();
+      if (!message) return;
+      state.chatbotDraft = '';
+      addChatbotMessage('user', message);
+      try {
+        const gptReply = await requestChatGPTReply(message);
+        addChatbotMessage('ai', gptReply || getChatbotReply(message));
+      } catch (e) {
+        addChatbotMessage('ai', getChatbotReply(message) + '\n\n참고: ChatGPT 서버 연결에 실패해서 사이트 내부 AI 답변으로 대신 응답했어요. 설정한 서버 주소를 확인해주세요.');
+      }
+      if (['share','guardian','dashboard','ai'].includes(state.activeTab)) render();
+    }
+
+    function bindChatbot() {
+      const fab = document.getElementById('aiChatbotFab');
+      const win = document.getElementById('aiChatbotWindow');
+      const close = document.getElementById('aiChatbotClose');
+      const form = document.getElementById('aiChatbotForm');
+      const input = document.getElementById('aiChatbotInput');
+      const endpointInput = document.getElementById('chatgptEndpointInput');
+      const saveEndpointBtn = document.getElementById('saveChatgptEndpointBtn');
+      const enabledToggle = document.getElementById('chatgptEnabledToggle');
+      if (!fab || !win) return;
+      fab.addEventListener('click', (e) => {
+        e.preventDefault();
+        state.chatbotOpen = !state.chatbotOpen;
+        win.classList.toggle('open', state.chatbotOpen);
+        if (state.chatbotOpen) {
+          input?.focus();
+          const box = document.getElementById('aiChatbotMessages');
+          if (box) box.scrollTop = box.scrollHeight;
+        }
+      });
+      close?.addEventListener('click', (e) => {
+        e.preventDefault();
+        state.chatbotOpen = false;
+        win.classList.remove('open');
+      });
+      input?.addEventListener('input', () => {
+        state.chatbotDraft = input.value;
+      });
+      saveEndpointBtn?.addEventListener('click', () => {
+        state.chatgptEndpoint = endpointInput?.value.trim() || '';
+        localStorage.setItem(CHATGPT_ENDPOINT_KEY, state.chatgptEndpoint);
+        addChatbotMessage('ai', state.chatgptEndpoint ? `ChatGPT 서버 주소를 저장했어요: ${state.chatgptEndpoint}` : 'ChatGPT 서버 주소를 비웠어요. 내부 AI로만 답변합니다.');
+      });
+      enabledToggle?.addEventListener('change', () => {
+        state.chatgptEnabled = !!enabledToggle.checked;
+        localStorage.setItem(CHATGPT_ENABLED_KEY, state.chatgptEnabled ? 'true' : 'false');
+        addChatbotMessage('ai', state.chatgptEnabled ? 'ChatGPT 연동을 켰어요. 서버 주소가 연결되어 있으면 ChatGPT 답변을 우선 사용합니다.' : 'ChatGPT 연동을 껐어요. 사이트 내부 AI로 답변합니다.');
+      });
+      form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendChatbotMessage(input.value);
+        input.value = '';
+      });
+      document.querySelectorAll('[data-ai-quick]').forEach(btn => {
+        btn.addEventListener('click', () => sendChatbotMessage(btn.dataset.aiQuick || ''));
+      });
+    }
+
+    function bindAuth() {
+      const tabs = document.querySelectorAll('#authTabs button');
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const authError = document.getElementById('authError');
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          btn.classList.add('active');
+          const tab = btn.dataset.tab;
+          loginForm.classList.toggle('hidden', tab !== 'login');
+          signupForm.classList.toggle('hidden', tab !== 'signup');
+          authError.classList.add('hidden');
+        });
+      });
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const users = load(USERS_KEY, defaultUsers);
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const found = users.find(u => u.email === email && u.password === password);
+        if (!found) {
+          authError.textContent = '이메일 또는 비밀번호가 맞지 않습니다';
+          authError.classList.remove('hidden');
+          return;
+        }
+        save(SESSION_KEY, found);
+        state.user = found;
+        render();
+        requestCurrentLocation();
+      });
+      signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const users = load(USERS_KEY, defaultUsers);
+        const name = document.getElementById('signupName').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value.trim();
+        if (!name || !email || !password) {
+          authError.textContent = '모든 항목을 입력해주세요';
+          authError.classList.remove('hidden');
+          return;
+        }
+        if (users.some(u => u.email === email)) {
+          authError.textContent = '이미 등록된 이메일입니다';
+          authError.classList.remove('hidden');
+          return;
+        }
+        const created = { id:'user-' + Date.now(), name, email, password, role:'USER' };
+        const next = [...users, created];
+        save(USERS_KEY, next);
+        save(SESSION_KEY, created);
+        state.user = created;
+        render();
+        requestCurrentLocation();
+      });
+    }
+
+
+    function selectedPlaceFromInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input || !input.dataset.lat || !input.dataset.lon) return null;
+      const lat = Number(input.dataset.lat);
+      const lon = Number(input.dataset.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+      return {
+        lat,
+        lon,
+        label: input.dataset.label || input.value,
+        name: input.dataset.name || input.value
+      };
+    }
+
+    function clearSelectedPlace(input) {
+      if (!input) return;
+      delete input.dataset.lat;
+      delete input.dataset.lon;
+      delete input.dataset.label;
+      delete input.dataset.name;
+    }
+
+    function closePlaceSuggestions(box) {
+      if (!box) return;
+      box.classList.remove('open');
+      box.innerHTML = '';
+    }
+
+    function renderPlaceSuggestions(box, input, results, kind) {
+      if (!box || !input) return;
+      if (!results.length) {
+        box.innerHTML = '<div class="place-suggestion-empty">검색 결과가 없어요. 더 구체적인 지역명을 함께 입력해보세요.</div>';
+        box.classList.add('open');
+        return;
+      }
+      box.innerHTML = results.map((place, index) => `
+        <button type="button" class="place-suggestion-item" data-index="${index}">
+          <div class="place-suggestion-name">${escapeHTML(place.name)}</div>
+          <div class="place-suggestion-address">${escapeHTML(place.label)}</div>
+          <div class="tiny muted" style="margin-top:6px">${escapeHTML(place.type || '카카오맵 장소')}${place.phone ? ' · ' + escapeHTML(place.phone) : ''}</div>
+        </button>
+      `).join('');
+      box.classList.add('open');
+      box.querySelectorAll('[data-index]').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('click', () => {
+          const place = results[Number(btn.dataset.index)];
+          input.value = selectedPlaceText(place);
+          input.dataset.lat = String(place.lat);
+          input.dataset.lon = String(place.lon);
+          input.dataset.label = place.label;
+          input.dataset.name = place.name;
+          if (kind === 'start') state.latestStartQuery = selectedPlaceText(place);
+          if (kind === 'destination') state.latestDestination = selectedPlaceText(place);
+          closePlaceSuggestions(box);
+        });
+      });
+    }
+
+    function setupPlaceAutocomplete(inputId, boxId, kind) {
+      const input = document.getElementById(inputId);
+      const box = document.getElementById(boxId);
+      if (!input || !box) return;
+      let timer = null;
+      let requestId = 0;
+      input.addEventListener('input', () => {
+        clearSelectedPlace(input);
+        const value = input.value.trim();
+        if (kind === 'start') state.latestStartQuery = value;
+        if (kind === 'destination') state.latestDestination = value;
+        clearTimeout(timer);
+        if (value.length < 2) {
+          closePlaceSuggestions(box);
+          return;
+        }
+        timer = setTimeout(async () => {
+          const currentRequest = ++requestId;
+          box.innerHTML = '<div class="place-suggestion-empty">연관검색어를 찾는 중...</div>';
+          box.classList.add('open');
+          try {
+            const results = await searchPlaceSuggestions(value, 8);
+            if (currentRequest !== requestId) return;
+            renderPlaceSuggestions(box, input, results, kind);
+          } catch (e) {
+            if (currentRequest !== requestId) return;
+            box.innerHTML = '<div class="place-suggestion-empty">장소 검색에 실패했어요. 잠시 후 다시 입력해주세요.</div>';
+            box.classList.add('open');
+          }
+        }, 320);
+      });
+      input.addEventListener('focus', () => {
+        if (box.innerHTML.trim()) box.classList.add('open');
+      });
+      input.addEventListener('blur', () => {
+        setTimeout(() => closePlaceSuggestions(box), 160);
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closePlaceSuggestions(box);
+      });
+    }
+
+    function bindApp() {
+      document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => setState({ activeTab: btn.dataset.nav }));
+      });
+      document.querySelectorAll('[data-favorite]').forEach(btn => {
+        btn.addEventListener('click', () => setState({ activeTab: 'route', latestDestination: btn.dataset.favorite }));
+      });
+      document.querySelectorAll('[data-ai-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.dataset.aiAction;
+          if (action === 'risk') showAIResult(aiRiskPredictionText());
+          if (action === 'anomaly') showAIResult(aiAnomalyDetectionText());
+          if (action === 'personal') showAIResult(aiPersonalSafetyAlertText());
+        });
+      });
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(SESSION_KEY);
+        state.user = null;
+        render();
+      });
+
+      if (state.activeTab === 'route') {
+        const findBtn = document.getElementById('findRouteBtn');
+        const locationBtn = document.getElementById('useLocationBtn');
+        const resetBtn = document.getElementById('resetRouteBtn');
+        const travelModeSelect = document.getElementById('travelModeSelect');
+        setupPlaceAutocomplete('startQuery', 'startSuggestions', 'start');
+        setupPlaceAutocomplete('destinationQuery', 'destinationSuggestions', 'destination');
+        if (findBtn) findBtn.addEventListener('click', handleRouteSearch);
+        if (locationBtn) locationBtn.addEventListener('click', requestCurrentLocation);
+        if (travelModeSelect) travelModeSelect.addEventListener('change', () => {
+          stopNavigationWatch(); setState({ travelMode: travelModeSelect.value, routes: [], selectedRouteId: null, routeError: '', tripActive:false, navigationActive:false, navigationStepIndex:0, navigationStartedAt:null, navigationRemainingMeters:null, navigationProgress:0 });
+        });
+        if (resetBtn) resetBtn.addEventListener('click', () => {
+          stopNavigationWatch(); setState({ routes: [], selectedRouteId: null, routeDestinationLabel: '', routeStartLocation:null, latestStartQuery:'', latestDestination:'', routeError: '', tripActive:false, navigationActive:false, navigationStepIndex:0, navigationStartedAt:null, navigationRemainingMeters:null, navigationProgress:0 });
+        });
+        document.querySelectorAll('[data-route-id]').forEach(el => {
+          el.addEventListener('click', () => { stopNavigationWatch(); setState({ selectedRouteId: Number(el.dataset.routeId), navigationActive:false, navigationStepIndex:0, navigationStartedAt:null, navigationRemainingMeters:null, navigationProgress:0 }); });
+        });
+        const startTripBtn = document.getElementById('startTripBtn');
+        if (startTripBtn) startTripBtn.addEventListener('click', startTrip);
+        const nextNavBtn = document.getElementById('nextNavigationStepBtn');
+        const prevNavBtn = document.getElementById('prevNavigationStepBtn');
+        const stopNavBtn = document.getElementById('stopNavigationBtn');
+        if (nextNavBtn) nextNavBtn.addEventListener('click', nextNavigationStep);
+        if (prevNavBtn) prevNavBtn.addEventListener('click', prevNavigationStep);
+        if (stopNavBtn) stopNavBtn.addEventListener('click', stopNavigation);
+      }
+
+      if (state.activeTab === 'ai') {
+        const riskBtn = document.getElementById('runAIRiskBtn');
+        const anomalyBtn = document.getElementById('simulateAnomalyBtn');
+        const personalBtn = document.getElementById('createPersonalAlertBtn');
+        if (riskBtn) riskBtn.addEventListener('click', () => showAIResult(aiRiskPredictionText()));
+        if (anomalyBtn) anomalyBtn.addEventListener('click', () => showAIResult(aiAnomalyDetectionText()));
+        if (personalBtn) personalBtn.addEventListener('click', () => showAIResult(aiPersonalSafetyAlertText()));
+      }
+
+      if (state.activeTab === 'share') {
+        const toggle = document.getElementById('shareToggle');
+        if (toggle) toggle.addEventListener('change', () => {
+          const next = { ...state.sharing, enabled: toggle.checked, lastSentAt: timeNow() };
+          save(SHARE_KEY, next);
+          setState({ sharing: next });
+        });
+      }
+
+      if (state.activeTab === 'sos') {
+        const sosBtn = document.getElementById('sosBtn');
+        if (sosBtn) sosBtn.addEventListener('click', () => {
+          setState({ sosSent: true });
+          setTimeout(() => setState({ sosSent: false }), 2500);
+        });
+      }
+    }
+
+    function requestCurrentLocation() {
+      if (!navigator.geolocation) {
+        setState({ routeError: '현재 브라우저에서 위치 기능을 지원하지 않습니다' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          setState({
+            currentLocation: {
+              lat: pos.coords.latitude,
+              lon: pos.coords.longitude,
+              label: '현재 위치',
+              accuracy: pos.coords.accuracy
+            },
+            routeError: ''
+          });
+          if (state.navigationActive) {
+            updateNavigationByLocation(state.currentLocation);
+            render();
+          }
+        },
+        () => setState({ routeError: '현재 위치를 불러오지 못했습니다' }),
+        { enableHighAccuracy:true, timeout:10000 }
+      );
+    }
+
+    async function handleRouteSearch() {
+      const startQuery = document.getElementById('startQuery')?.value.trim() || '';
+      const destinationQuery = document.getElementById('destinationQuery')?.value.trim() || '';
+      const travelMode = normalizeTravelMode(document.getElementById('travelModeSelect')?.value || state.travelMode || 'sidewalk');
+      if (!destinationQuery) {
+        setState({ routeError: '목적지를 입력해주세요' });
+        return;
+      }
+      setState({ loadingRoutes: true, routeError: '', routes: [], selectedRouteId: null, travelMode, latestStartQuery: startQuery, latestDestination: destinationQuery, navigationActive:false, navigationStepIndex:0, navigationStartedAt:null });
+      try {
+        let start = null;
+        const selectedStart = selectedPlaceFromInput('startQuery');
+        const selectedDestination = selectedPlaceFromInput('destinationQuery');
+        if (startQuery) {
+          start = selectedStart || await geocodePlace(startQuery);
+        } else {
+          start = state.currentLocation;
+        }
+        if (!start) throw new Error('출발지를 입력하거나 현재 위치 사용을 먼저 눌러주세요');
+        const destination = selectedDestination || await geocodePlace(destinationQuery);
+        const result = await fetchRoute(start, destination, travelMode);
+        const expectedProfile = modeMeta(travelMode).primaryProfile;
+        if (result.usedProfile !== expectedProfile) {
+          throw new Error('선택한 이동 기준과 실제 지도 경로 기준이 달라 경로 계산을 중단했습니다. 다시 안전 경로 찾기를 눌러주세요.');
+        }
+        const routes = buildRouteVariants(result.routes, travelMode, result.usedProfile);
+        setState({
+          routes,
+          selectedRouteId: routes[0]?.id || null,
+          latestDestination: destinationQuery,
+          latestStartQuery: startQuery,
+          routeDestinationLabel: destination.label,
+          routeStartLocation: { ...start, label: startQuery || '현재 위치' },
+          travelMode,
+          loadingRoutes: false,
+          routeError: ''
+        });
+      } catch (e) {
+        setState({ loadingRoutes: false, routeError: e.message || '경로를 찾지 못했습니다' });
+      }
+    }
+
+    function startTrip() {
+      const route = selectedRoute();
+      if (!route) return;
+      if (state.navigationActive) {
+        stopNavigation();
+        return;
+      }
+      const now = new Date();
+      const endDate = new Date(now.getTime() + route.durationSeconds * 1000);
+      const item = {
+        id: 'h-' + Date.now(),
+        date: now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2,'0') + '.' + String(now.getDate()).padStart(2,'0'),
+        start: now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' }),
+        end: endDate.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' }),
+        route: `${route.modeLabel || modeLabel(state.travelMode)} · ${route.name}`,
+        status: '정상 귀가 예정',
+        destination: state.routeDestinationLabel || state.latestDestination || '목적지'
+      };
+      const nextHistory = [item, ...state.history];
+      const nextSharing = { enabled:true, lastSentAt: timeNow() };
+      save(HISTORY_KEY, nextHistory);
+      save(SHARE_KEY, nextSharing);
+      state.history = nextHistory;
+      state.sharing = nextSharing;
+      state.tripActive = true;
+      state.navigationActive = true;
+      state.navigationStepIndex = 0;
+      state.navigationStartedAt = now.toISOString();
+      state.activeTab = 'route';
+      const metrics = navigationMetrics(route);
+      state.navigationRemainingMeters = metrics.remaining || route.distanceMeters;
+      state.navigationProgress = metrics.progress || 0;
+      startNavigationWatch();
+      render();
+    }
+
+    function routeMapStyle(route, isSelected, idx) {
+      const mode = normalizeTravelMode(route?.mode || state.travelMode || 'sidewalk');
+      const colors = { sidewalk:'#15803d', foot:'#2563eb', car:'#b91c1c' };
+      return {
+        color: isSelected ? (colors[mode] || '#0f172a') : (idx === 0 ? '#334155' : '#94a3b8'),
+        weight: isSelected ? 7 : 4,
+        opacity: 0.9,
+        dashArray: mode === 'sidewalk' ? '8 8' : mode === 'foot' ? '2 8' : null
+      };
+    }
+
+    function clearMapLayers() {
+      (state.mapLayers || []).forEach(layer => {
+        try { layer.setMap(null); } catch (e) {}
+      });
+      state.mapLayers = [];
+      if (state.currentMarker) {
+        try { state.currentMarker.setMap(null); } catch (e) {}
+        state.currentMarker = null;
+      }
+    }
+
+    function kakaoLatLngFromPlace(place) {
+      return new kakao.maps.LatLng(Number(place.lat), Number(place.lon));
+    }
+
+    function kakaoLatLngFromGeometryPoint(point) {
+      return new kakao.maps.LatLng(Number(point[0]), Number(point[1]));
+    }
+
+    function addKakaoLabel(place, label) {
+      if (!state.map || !place) return;
+      const marker = new kakao.maps.Marker({
+        map: state.map,
+        position: kakaoLatLngFromPlace(place),
+        title: label || place.label || ''
+      });
+      state.mapLayers.push(marker);
+      const overlay = new kakao.maps.CustomOverlay({
+        map: state.map,
+        position: kakaoLatLngFromPlace(place),
+        yAnchor: 2.25,
+        content: `<div class="map-place-label">${escapeHTML(label || place.label || '')}</div>`
+      });
+      state.mapLayers.push(overlay);
+    }
+
+    function updateCurrentMarker() {
+      if (!state.map || !state.currentLocation || !window.kakao?.maps) return;
+      const position = kakaoLatLngFromPlace(state.currentLocation);
+      if (!state.currentMarker) {
+        state.currentMarker = new kakao.maps.CustomOverlay({
+          map: state.map,
+          position,
+          yAnchor: 0.5,
+          xAnchor: 0.5,
+          content: '<div class="map-current-marker" title="현재 위치"></div>'
+        });
+      } else {
+        state.currentMarker.setPosition(position);
+        state.currentMarker.setMap(state.map);
+      }
+      if (state.navigationActive) {
+        try { state.map.panTo(position); } catch (e) {}
+      }
+    }
+
+    async function setupMap() {
+      const el = document.getElementById('map');
+      if (!el) return;
+      const seq = ++mapSetupSeq;
+      try {
+        await ensureKakaoReady();
+      } catch (e) {
+        el.innerHTML = `<div class="alert">카카오맵을 불러오지 못했습니다. ${escapeHTML(e.message)}</div>`;
+        return;
+      }
+      if (seq !== mapSetupSeq || !document.body.contains(el)) return;
+
+      const routeStart = state.routeStartLocation || state.currentLocation;
+      const center = routeStart ? kakaoLatLngFromPlace(routeStart) : new kakao.maps.LatLng(36.3504, 127.3845);
+
+      // render()가 실행될 때마다 #map DOM이 새로 만들어집니다.
+      // 기존 kakao.maps.Map 객체가 이전 DOM을 계속 바라보면 길찾기/탭 전환 후 지도가 사라지는 문제가 생기므로,
+      // 현재 DOM과 연결된 지도인지 확인하고 다르면 카카오맵을 새로 생성합니다.
+      const shouldRecreateMap = !state.map || state.mapElement !== el;
+      if (shouldRecreateMap) {
+        try { clearMapLayers(); } catch (e) {}
+        state.map = null;
+        state.currentMarker = null;
+        state.mapElement = el;
+        el.innerHTML = '';
+        state.map = new kakao.maps.Map(el, { center, level: 5 });
+        state.map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+      } else {
+        try { state.map.relayout(); } catch (e) {}
+        try { state.map.setCenter(center); } catch (e) {}
+      }
+
+      clearMapLayers();
+
+      if (routeStart) addKakaoLabel(routeStart, routeStart.label || '출발지');
+      if (state.routeDestinationLabel && state.routes.length) {
+        const lastRoute = selectedRoute() || state.routes[0];
+        const lastPoint = lastRoute?.geometry?.[lastRoute.geometry.length - 1];
+        if (lastPoint) addKakaoLabel({ lat:lastPoint[0], lon:lastPoint[1], label:state.routeDestinationLabel }, '목적지');
+      }
+
+      const bounds = new kakao.maps.LatLngBounds();
+      let hasBounds = false;
+      if (routeStart) { bounds.extend(kakaoLatLngFromPlace(routeStart)); hasBounds = true; }
+
+      if (state.routes.length) {
+        state.routes.forEach((route, idx) => {
+          const style = routeMapStyle(route, state.selectedRouteId === route.id, idx);
+          const path = routeDisplayGeometry(route).map(kakaoLatLngFromGeometryPoint);
+          if (!path.length) return;
+          const polyline = new kakao.maps.Polyline({
+            map: state.map,
+            path,
+            strokeWeight: style.weight,
+            strokeColor: style.color,
+            strokeOpacity: style.opacity,
+            strokeStyle: style.dashArray ? 'shortdash' : 'solid'
+          });
+          state.mapLayers.push(polyline);
+          if (state.selectedRouteId === route.id && path.length) {
+            const badgePosition = path[Math.floor(path.length / 2)];
+            const badgeMode = normalizeTravelMode(route.mode);
+            const badge = new kakao.maps.CustomOverlay({
+              map: state.map,
+              position: badgePosition,
+              yAnchor: 1.7,
+              content: `<div class="map-route-badge ${badgeMode}">${escapeHTML(routeModeBadgeText(route))}</div>`
+            });
+            state.mapLayers.push(badge);
+          }
+          path.forEach(p => { bounds.extend(p); hasBounds = true; });
+        });
+      }
+
+      updateCurrentMarker();
+
+      const activeRoute = selectedRoute();
+      if (state.navigationActive && activeRoute && state.currentLocation) {
+        const metrics = navigationMetrics(activeRoute);
+        state.navigationRemainingMeters = metrics.remaining;
+        state.navigationProgress = metrics.progress;
+      }
+
+      if (hasBounds) {
+        try { state.map.setBounds(bounds, 50, 50, 50, 50); } catch (e) {}
+      }
+
+      // 모바일 브라우저/Netlify 캐시 환경에서 지도 컨테이너 크기 계산이 늦는 경우를 보정합니다.
+      requestAnimationFrame(() => {
+        try {
+          if (state.map && state.mapElement === el && document.body.contains(el)) {
+            state.map.relayout();
+            if (hasBounds) state.map.setBounds(bounds, 50, 50, 50, 50);
+          }
+        } catch (e) {}
+      });
+    }
+
+    function boot() {
+      initStorage();
+      state.user = load(SESSION_KEY, null);
+      state.contacts = load(CONTACTS_KEY, defaultContacts);
+      state.history = load(HISTORY_KEY, defaultHistory);
+      state.sharing = load(SHARE_KEY, defaultShare);
+      state.favorites = load(FAVORITES_KEY, defaultFavorites);
+      state.chatgptEndpoint = localStorage.getItem(CHATGPT_ENDPOINT_KEY) || '';
+      state.chatgptEnabled = localStorage.getItem(CHATGPT_ENABLED_KEY) === 'true';
+      render();
+      if (state.user) requestCurrentLocation();
+      setInterval(() => {
+        if (state.user && state.sharing.enabled) {
+          const next = { ...state.sharing, lastSentAt: timeNow() };
+          save(SHARE_KEY, next);
+          state.sharing = next;
+          if (['share','guardian','dashboard','ai'].includes(state.activeTab)) render();
+        }
+      }, 5000);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
